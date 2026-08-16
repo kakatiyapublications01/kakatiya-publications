@@ -1,18 +1,44 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
-
-export const metadata = {
-  title: "Admin Portal Sign In",
-  description: "Secure Administrator Access for Kakatiya Publications Management System.",
-};
+import { loginAdmin } from "@/lib/firebase/auth";
 
 export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const { isAdmin } = await loginAdmin(email, password);
+
+      if (!isAdmin) {
+        setError("Access Denied: Your account does not have administrator privilege claims.");
+        setSubmitting(false);
+        return;
+      }
+
+      router.push("/admin/dashboard");
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError(err?.message || "Invalid authentication credentials. Please check and retry.");
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#09090b] p-4 relative overflow-hidden">
-      {/* Background Gold Blur */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#d4af37]/10 blur-[130px] rounded-full pointer-events-none" />
 
       <Container size="sm">
@@ -33,13 +59,22 @@ export default function AdminLoginPage() {
             </p>
           </div>
 
-          <form className="space-y-5">
+          {error && (
+            <div className="p-3.5 rounded bg-red-950/80 border border-red-800/80 text-red-200 text-xs leading-relaxed">
+              ⚠️ {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs uppercase tracking-wider text-zinc-400 font-medium mb-1.5">
                 Administrator Email
               </label>
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#d4af37]"
                 placeholder="admin@kakatiyapublications.com"
               />
@@ -51,13 +86,22 @@ export default function AdminLoginPage() {
               </label>
               <input
                 type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#d4af37]"
                 placeholder="••••••••••••"
               />
             </div>
 
-            <Button variant="gold" className="w-full font-semibold" size="md" type="button">
-              Sign In to Dashboard
+            <Button
+              variant="gold"
+              className="w-full font-semibold"
+              size="md"
+              type="submit"
+              disabled={submitting}
+            >
+              {submitting ? "Verifying Token..." : "Sign In to Dashboard"}
             </Button>
           </form>
 

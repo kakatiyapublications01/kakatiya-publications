@@ -1,0 +1,43 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    function isValidPdf() {
+      return request.resource.contentType == 'application/pdf'
+          && request.resource.size < 50 * 1024 * 1024; // 50MB Max
+    }
+
+    function isValidImage() {
+      return (request.resource.contentType == 'image/jpeg'
+           || request.resource.contentType == 'image/png'
+           || request.resource.contentType == 'image/webp')
+          && request.resource.size < 10 * 1024 * 1024; // 10MB Max
+    }
+
+    // Magazine PDFs
+    match /magazines/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin() && isValidPdf();
+    }
+
+    // Posters & Images
+    match /posters/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin() && isValidImage();
+    }
+
+    // General Uploads
+    match /uploads/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin() && (isValidImage() || isValidPdf());
+    }
+  }
+}
