@@ -12,30 +12,30 @@ service cloud.firestore {
     }
 
     function isPublished() {
-      return resource.data.status == 'published';
+      return resource != null && resource.data != null && resource.data.status == 'published';
     }
 
     // Magazines Collection
     match /magazines/{magazineId} {
-      allow read: if isPublished() || isAdmin();
+      allow read: if isAdmin() || isPublished();
       allow create, update, delete: if isAdmin();
     }
 
     // Stories Collection
     match /stories/{storyId} {
-      allow read: if isPublished() || isAdmin();
+      allow read: if isAdmin() || isPublished();
       allow create, update, delete: if isAdmin();
     }
 
     // VIP Collection
     match /vip/{vipId} {
-      allow read: if isPublished() || isAdmin();
+      allow read: if isAdmin() || isPublished();
       allow create, update, delete: if isAdmin();
     }
 
     // VVIP Collection
     match /vvip/{vvipId} {
-      allow read: if isPublished() || isAdmin();
+      allow read: if isAdmin() || isPublished();
       allow create, update, delete: if isAdmin();
     }
 
@@ -43,6 +43,18 @@ service cloud.firestore {
     match /analytics/{analyticsId} {
       allow read: if isAdmin();
       allow write: if false; // Server API handles analytics writes
+    }
+
+    // Visitors Collection (Read-only for Admins, Server API handles writes)
+    match /visitors/{visitorId} {
+      allow read: if isAdmin();
+      allow write: if false; // Server API handles visitor writes
+    }
+
+    // Live Sessions Collection (Server API handles heartbeats securely)
+    match /live_sessions/{sessionId} {
+      allow read: if true;
+      allow write: if false; // Server API handles session heartbeats
     }
   }
 }

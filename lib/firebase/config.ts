@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -15,10 +15,24 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase App instance with singleton check
-export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const isNewApp = getApps().length === 0;
+export const app = isNewApp ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Resilient Firestore initialization with long-polling fallback for unreliable networks / firewalls
+function getFirestoreInstance() {
+  try {
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+    });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+export const db = getFirestoreInstance();
+
 export const storage = getStorage(app);
 
 // Safe Analytics initialization for Client-side SSR

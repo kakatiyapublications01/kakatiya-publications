@@ -17,13 +17,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Kakatiya Publications | Premium Editorial & Digital Magazine",
-    template: "%s | Kakatiya Publications",
+    default: "KakatiyaPulse | Premium Editorial & Digital Magazine",
+    template: "%s | KakatiyaPulse",
   },
   description:
-    "Kakatiya Publications is a premier luxury editorial publishing brand, delivering high-impact magazines, prestigious VIP profile features, and cultural stories.",
+    "KakatiyaPulse is a premier editorial and community publication brand, delivering high-impact magazines, prestigious VIP profile features, and cultural stories.",
   keywords: [
-    "Kakatiya Publications",
+    "KakatiyaPulse",
+    "Kakatiya Pulse",
     "Kakatiya Magazine",
     "Editorial Publishing",
     "VIP Features",
@@ -31,15 +32,15 @@ export const metadata: Metadata = {
     "Digital Magazine",
     "Telugu Cultural Publications",
   ],
-  authors: [{ name: "Kakatiya Publications Team" }],
+  authors: [{ name: "KakatiyaPulse Team" }],
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Kakatiya Publications | Premium Editorial Publishing",
+    title: "KakatiyaPulse | Premium Editorial Publishing",
     description: "Discover luxury digital magazines, VVIP features, and editorial stories.",
-    url: "https://kakatiyapublications.com",
-    siteName: "Kakatiya Publications",
+    url: "https://kakatiyapulse.com",
+    siteName: "KakatiyaPulse",
     locale: "en_US",
     type: "website",
   },
@@ -53,9 +54,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${inter.variable} dark h-full antialiased`}
+      data-scroll-behavior="smooth"
+      className={`${playfair.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#09090b] text-[#f4f4f5] selection:bg-[#d4af37]/30 selection:text-[#fef3c7]">
+      <body className="min-h-full flex flex-col bg-white text-[#1C1C1C] selection:bg-[#14532D]/20 selection:text-[#14532D]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

@@ -9,22 +9,58 @@ import {
   where,
   orderBy,
 } from "firebase/firestore";
-import { db } from "./config";
-import { VvipMember } from "@/types";
+import { db, auth } from "./config";
+import { VvipMember, PublishStatus } from "@/types";
 
 const COLLECTION_NAME = "vvip";
 
 export async function getPublishedVvipMembers(): Promise<VvipMember[]> {
-  const q = query(
-    collection(db, COLLECTION_NAME),
-    where("status", "==", "published"),
-    orderBy("displayOrder", "asc")
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  })) as VvipMember[];
+  try {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("status", "==", "published")
+    );
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    })) as VvipMember[];
+    return docs.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  } catch (err) {
+    console.error("Error fetching published VVIP members:", err);
+    return [];
+  }
+}
+
+export async function getAllVvipMembersAdmin(): Promise<VvipMember[]> {
+  if (auth.currentUser) {
+    try {
+      await auth.currentUser.getIdToken(true);
+    } catch (e) {
+      console.warn("Token refresh error:", e);
+    }
+  }
+  try {
+    const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    })) as VvipMember[];
+  } catch (err) {
+    console.warn("Falling back to unindexed query for admin VVIP:", err);
+    const fallbackQ = query(collection(db, COLLECTION_NAME));
+    const snapshot = await getDocs(fallbackQ);
+    const docs = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    })) as VvipMember[];
+    return docs.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }
 }
 
 export async function createVvipMember(
@@ -36,6 +72,25 @@ export async function createVvipMember(
     updatedAt: new Date().toISOString(),
   });
   return docRef.id;
+}
+
+export async function updateVvipMember(
+  id: string,
+  data: Partial<Omit<VvipMember, "id" | "createdAt">>
+): Promise<void> {
+  const docRef = doc(db, COLLECTION_NAME, id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function updateVvipMemberStatus(id: string, status: PublishStatus): Promise<void> {
+  const docRef = doc(db, COLLECTION_NAME, id);
+  await updateDoc(docRef, {
+    status,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 export async function deleteVvipMember(id: string): Promise<void> {

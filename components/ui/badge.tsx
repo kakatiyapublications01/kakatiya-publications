@@ -12,16 +12,16 @@ export function Badge({
   ...props
 }: BadgeProps) {
   const variantClasses = {
-    gold: "bg-[#d4af37]/15 text-[#fde047] border border-[#d4af37]/40",
-    vvip: "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-600/20 text-yellow-300 border border-yellow-400/50 shadow-sm shadow-yellow-500/20 font-semibold tracking-wider uppercase",
-    vip: "bg-zinc-800/80 text-amber-200 border border-amber-500/30",
-    neutral: "bg-zinc-800 text-zinc-300 border border-zinc-700",
-    success: "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40",
+    gold: "bg-[#F8F7F3] text-[#C9A227] border border-[#E8D48A] font-medium",
+    vvip: "bg-[#14532D]/10 text-[#14532D] border border-[#C9A227] font-semibold tracking-wider uppercase",
+    vip: "bg-[#F8F7F3] text-[#14532D] border border-[#E5E5E0] font-medium",
+    neutral: "bg-[#F8F7F3] text-[#555555] border border-[#E5E5E0]",
+    success: "bg-emerald-50 text-emerald-800 border border-emerald-200",
   };
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs ${variantClasses[variant]} ${className}`}
       {...props}
     >
       {children}

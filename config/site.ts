@@ -5,15 +5,15 @@ export interface NavItem {
 }
 
 export const siteConfig = {
-  name: "Kakatiya Publications",
-  shortName: "Kakatiya",
+  name: "KakatiyaPulse",
+  shortName: "KakatiyaPulse",
   description:
-    "A premier luxury editorial publishing brand dedicated to high-impact magazines, prestigious VVIP & VIP profiles, and influential cultural stories.",
-  url: "https://kakatiyapublications.com",
+    "A premier editorial and community publication dedicated to high-impact magazines, prestigious VVIP & VIP profiles, and influential stories.",
+  url: "https://kakatiyapulse.com",
   contact: {
-    email: "contact@kakatiyapublications.com",
+    email: "contact@kakatiyapulse.com",
     phone: "+91 98765 43210",
-    address: "Kakatiya Publications Tower, Jubilee Hills, Hyderabad, Telangana",
+    address: "KakatiyaPulse Tower, Jubilee Hills, Hyderabad, Telangana",
   },
   mainNav: [
     { title: "Home", href: "/" },

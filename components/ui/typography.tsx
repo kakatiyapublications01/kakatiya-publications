@@ -9,7 +9,7 @@ export function H1({ children, gradient = false, className = "", ...props }: Hea
   return (
     <h1
       className={`font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ${
-        gradient ? "gold-gradient-text" : "text-white"
+        gradient ? "text-[#14532D]" : "text-[#1C1C1C]"
       } ${className}`}
       {...props}
     >
@@ -22,7 +22,7 @@ export function H2({ children, gradient = false, className = "", ...props }: Hea
   return (
     <h2
       className={`font-serif text-3xl sm:text-4xl font-bold tracking-tight ${
-        gradient ? "gold-gradient-text" : "text-white"
+        gradient ? "text-[#14532D]" : "text-[#1C1C1C]"
       } ${className}`}
       {...props}
     >
@@ -35,7 +35,7 @@ export function H3({ children, gradient = false, className = "", ...props }: Hea
   return (
     <h3
       className={`font-serif text-xl sm:text-2xl font-semibold tracking-tight ${
-        gradient ? "gold-gradient-text" : "text-white"
+        gradient ? "text-[#14532D]" : "text-[#1C1C1C]"
       } ${className}`}
       {...props}
     >
@@ -47,7 +47,7 @@ export function H3({ children, gradient = false, className = "", ...props }: Hea
 export function SectionSubtitle({ children, className = "", ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={`text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#d4af37] ${className}`}
+      className={`text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#C9A227] ${className}`}
       {...props}
     >
       {children}
@@ -57,7 +57,7 @@ export function SectionSubtitle({ children, className = "", ...props }: React.HT
 
 export function Text({ children, className = "", ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={`text-zinc-300 text-base leading-relaxed ${className}`} {...props}>
+    <p className={`text-[#555555] text-base leading-relaxed ${className}`} {...props}>
       {children}
     </p>
   );

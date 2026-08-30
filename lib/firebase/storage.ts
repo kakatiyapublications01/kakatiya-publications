@@ -4,7 +4,7 @@ import { storage } from "./config";
 const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export async function uploadMagazinePdf(file: File, folderName: string = "magazines"): Promise<string> {
   if (file.type !== "application/pdf") {
@@ -35,11 +35,17 @@ export async function uploadPosterImage(file: File, folderName: string = "poster
   const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
   const storageRef = ref(storage, `${folderName}/${fileName}`);
 
+  const mimeType = file.type === "image/jpg" ? "image/jpeg" : file.type || "image/jpeg";
+
   const snapshot = await uploadBytes(storageRef, file, {
-    contentType: file.type,
+    contentType: mimeType,
   });
 
   return await getDownloadURL(snapshot.ref);
+}
+
+export async function uploadMagazineCoverImage(file: File, folderName: string = "magazines/covers"): Promise<string> {
+  return uploadPosterImage(file, folderName);
 }
 
 export async function deleteStorageFileByUrl(fileUrl: string): Promise<void> {

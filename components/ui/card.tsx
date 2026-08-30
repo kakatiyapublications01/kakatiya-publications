@@ -15,9 +15,9 @@ export function Card({
 }: CardProps) {
   return (
     <div
-      className={`glass-panel rounded-lg overflow-hidden transition-all duration-300 ${
-        hoverEffect ? "glass-panel-hover" : ""
-      } ${glow ? "border-[#d4af37]/40 shadow-lg shadow-[#d4af37]/10" : ""} ${className}`}
+      className={`bg-white border border-[#E5E5E0] rounded-xl overflow-hidden transition-all duration-250 ${
+        hoverEffect ? "hover:border-[#C9A227] hover:shadow-md" : "shadow-sm"
+      } ${glow ? "border-[#C9A227]/60 shadow-md shadow-[#C9A227]/10" : ""} ${className}`}
       {...props}
     >
       {children}
@@ -27,7 +27,7 @@ export function Card({
 
 export function CardHeader({ children, className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`p-5 sm:p-6 border-b border-zinc-800/80 ${className}`} {...props}>
+    <div className={`p-5 sm:p-6 border-b border-[#E5E5E0] ${className}`} {...props}>
       {children}
     </div>
   );
@@ -43,7 +43,7 @@ export function CardContent({ children, className = "", ...props }: React.HTMLAt
 
 export function CardFooter({ children, className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`p-5 sm:p-6 border-t border-zinc-800/80 bg-zinc-950/40 ${className}`} {...props}>
+    <div className={`p-5 sm:p-6 border-t border-[#E5E5E0] bg-[#F8F7F3] ${className}`} {...props}>
       {children}
     </div>
   );

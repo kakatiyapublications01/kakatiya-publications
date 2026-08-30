@@ -3,12 +3,14 @@ export type PublishStatus = "published" | "draft" | "archived";
 export interface Magazine {
   id: string;
   title: string;
-  month: string; // e.g. "August"
+  month?: string; // Optional for backward compatibility with older documents
   year: number;  // e.g. 2026
   pdfUrl: string;
   coverImageUrl: string;
+  publicId?: string;
   description: string;
   pageCount?: number;
+  pages?: number;
   featured?: boolean;
   status: PublishStatus;
   createdAt: string;
@@ -34,30 +36,34 @@ export interface VipMember {
   id: string;
   name: string;
   designation: string;
-  posterUrl: string;
-  profileDetails: string;
+  posterUrl?: string;
+  imageUrl?: string;
+  profileDetails?: string;
   category?: string;
   location?: string;
   status: PublishStatus;
-  displayOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface VvipMember {
   id: string;
   name: string;
   designation: string;
-  posterUrl: string;
-  detailedProfile: string;
-  prestigeBadge?: string; // e.g. "Patron of Excellence", "Visionary Leader"
+  posterUrl?: string;
+  imageUrl?: string;
+  detailedProfile?: string;
+  bio?: string;
+  prestigeBadge?: string;
+  badge?: string;
   achievements?: string[];
   quote?: string;
-  isFeatured: boolean;
+  isFeatured?: boolean;
   status: PublishStatus;
-  displayOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AnalyticsSummary {
