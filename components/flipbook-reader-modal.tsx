@@ -10,17 +10,14 @@ import {
   X,
   ZoomIn,
   ZoomOut,
-  RotateCcw,
   BookOpen,
   Loader2,
   LayoutGrid,
-  Share2,
-  List,
+  Search,
   Check,
 } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Magazine } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 interface FlipbookReaderModalProps {
@@ -40,14 +37,24 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [pageFlipping, setPageFlipping] = useState<"next" | "prev" | null>(null);
 
-  // New UI feature states
+  // Magnifier State
+  const [isMagnifierActive, setIsMagnifierActive] = useState<boolean>(false);
+  const [magnifierPos, setMagnifierPos] = useState<{ x: number; y: number; visible: boolean }>({
+    x: 0,
+    y: 0,
+    visible: false,
+  });
+
+  // UI feature states
   const [showThumbnails, setShowThumbnails] = useState<boolean>(false);
-  const [showShareToast, setShowShareToast] = useState<boolean>(false);
   const [pageInputText, setPageInputText] = useState<string>("1");
   const [isEditingPage, setIsEditingPage] = useState<boolean>(false);
 
   const canvasLeftRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRightRef = useRef<HTMLCanvasElement | null>(null);
+  const magnifierCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const bookContainerRef = useRef<HTMLDivElement | null>(null);
+
   const renderTaskLeftRef = useRef<any>(null);
   const renderTaskRightRef = useRef<any>(null);
   const touchStartXRef = useRef<number | null>(null);
@@ -72,7 +79,11 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
   // Handle responsive layout detection
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsMagnifierActive(false);
+      }
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -113,7 +124,6 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
     setCurrentPage(1);
 
     const pdfUrl = magazine.pdfUrl;
-    console.log("[FlipbookReader] Loading PDF from URL:", pdfUrl);
 
     async function initPdf() {
       try {
@@ -122,11 +132,8 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
 
         const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(pdfUrl)}`;
 
-        // Strategy A (Instant Range Stream): PDF.js fetches only ~64KB header to render Page 1 in < 500ms
         try {
-          console.log("[FlipbookReader] Fast range stream via proxy:", proxyUrl);
           setLoadingProgress(40);
-
           loadingTask = pdfjsLib.getDocument({
             url: proxyUrl,
             cMapUrl: `/pdfjs/cmaps/`,
@@ -147,21 +154,20 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
           console.warn("[FlipbookReader] Range stream warning, trying direct ArrayBuffer fetch:", rangeErr);
         }
 
-        // Strategy B (Fallback ArrayBuffer): Download complete buffer if range stream fails
         if (!isSubscribed) return;
-        setLoadingProgress(60);
+        setLoadingProgress(50);
 
-        const proxyResponse = await fetch(proxyUrl);
-        if (!proxyResponse.ok) {
-          throw new Error(`Failed to load PDF (HTTP ${proxyResponse.status})`);
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download PDF stream (${response.status})`);
         }
 
-        const arrayBuffer = await proxyResponse.arrayBuffer();
+        const arrayBuffer = await response.arrayBuffer();
         if (!isSubscribed) return;
+        setLoadingProgress(85);
 
-        setLoadingProgress(95);
         loadingTask = pdfjsLib.getDocument({
-          data: new Uint8Array(arrayBuffer),
+          data: arrayBuffer,
           cMapUrl: `/pdfjs/cmaps/`,
           cMapPacked: true,
         });
@@ -174,9 +180,9 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
           setLoading(false);
         }
       } catch (err: any) {
-        console.error("[FlipbookReader] PDF loading error:", err?.name, err?.message, err);
+        console.error("[FlipbookReader] Critical PDF loading error:", err);
         if (isSubscribed) {
-          setError(`Unable to open this edition. (${err?.message || err?.name || "Unknown error"})`);
+          setError(err?.message || "Failed to load publication PDF.");
           setLoading(false);
         }
       }
@@ -186,191 +192,220 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
 
     return () => {
       isSubscribed = false;
-      if (loadingTask) {
+      if (loadingTask && loadingTask.destroy) {
         loadingTask.destroy();
       }
     };
   }, [magazine]);
 
-  // Render Page to Canvas
-  const renderSinglePage = useCallback(
-    async (
-      pageNumber: number,
-      canvas: HTMLCanvasElement | null,
-      renderTaskRef: React.MutableRefObject<any>
-    ) => {
-      if (!pdfDoc || !canvas || pageNumber < 1 || pageNumber > numPages) {
-        if (canvas) {
-          const ctx = canvas.getContext("2d");
-          if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Render individual page onto canvas
+  const renderPage = useCallback(
+    async (pageNum: number, canvas: HTMLCanvasElement, taskRef: React.MutableRefObject<any>) => {
+      if (!pdfDoc || pageNum < 1 || pageNum > numPages) return;
+
+      if (taskRef.current) {
+        try {
+          taskRef.current.cancel();
+        } catch (e) {
+          // Ignore cancelled tasks
         }
-        return;
+        taskRef.current = null;
       }
 
       try {
-        if (renderTaskRef.current) {
-          renderTaskRef.current.cancel();
+        const page = await pdfDoc.getPage(pageNum);
+        const baseViewport = page.getViewport({ scale: 1.0 });
+
+        const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+        const availableHeight = isFullscreen ? window.innerHeight - 100 : window.innerHeight - 140;
+
+        let scale = (availableHeight / baseViewport.height) * zoomLevel;
+        if (isMobile) {
+          const availableWidth = window.innerWidth - 24;
+          const widthScale = (availableWidth / baseViewport.width) * zoomLevel;
+          scale = Math.min(scale, widthScale);
         }
 
-        const page = await pdfDoc.getPage(pageNumber);
-        const unscaledViewport = page.getViewport({ scale: 1.0 });
+        const viewport = page.getViewport({ scale: scale * dpr });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.width = `${viewport.width / dpr}px`;
+        canvas.style.height = `${viewport.height / dpr}px`;
 
-        const containerHeight = Math.max(window.innerHeight - 160, 400);
-        const targetHeight = containerHeight * zoomLevel;
-        const scale = (targetHeight / unscaledViewport.height) * (window.devicePixelRatio || 1);
+        const ctx = canvas.getContext("2d", { alpha: false });
+        if (!ctx) return;
 
-        const viewport = page.getViewport({ scale });
-        const ctx = canvas.getContext("2d");
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport,
+        };
 
-        if (ctx) {
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          canvas.style.width = `${viewport.width / (window.devicePixelRatio || 1)}px`;
-          canvas.style.height = `${viewport.height / (window.devicePixelRatio || 1)}px`;
-
-          const renderContext = {
-            canvasContext: ctx,
-            viewport,
-            canvas,
-          };
-
-          const renderTask = page.render(renderContext);
-          renderTaskRef.current = renderTask;
-          await renderTask.promise;
-        }
+        const renderTask = page.render(renderContext);
+        taskRef.current = renderTask;
+        await renderTask.promise;
       } catch (err: any) {
         if (err?.name !== "RenderingCancelledException") {
-          console.warn(`Page ${pageNumber} render error:`, err);
+          console.error(`[FlipbookReader] Error rendering page ${pageNum}:`, err);
         }
       }
     },
-    [pdfDoc, numPages, zoomLevel]
+    [pdfDoc, numPages, zoomLevel, isFullscreen, isMobile]
   );
 
-  // Render current active page(s) whenever page or view parameters change
+  // Render Spread whenever page or zoom changes
   useEffect(() => {
-    if (!pdfDoc || loading) return;
+    if (!pdfDoc || numPages === 0) return;
 
     if (isMobile) {
-      renderSinglePage(currentPage, canvasLeftRef.current, renderTaskLeftRef);
+      if (canvasLeftRef.current) {
+        renderPage(currentPage, canvasLeftRef.current, renderTaskLeftRef);
+      }
     } else {
       if (currentPage === 1) {
-        renderSinglePage(0, canvasLeftRef.current, renderTaskLeftRef);
-        renderSinglePage(1, canvasRightRef.current, renderTaskRightRef);
+        if (canvasRightRef.current) {
+          renderPage(1, canvasRightRef.current, renderTaskRightRef);
+        }
       } else {
-        const leftPageNum = currentPage % 2 === 0 ? currentPage : currentPage - 1;
-        const rightPageNum = leftPageNum + 1;
+        const leftPage = currentPage % 2 === 0 ? currentPage : currentPage - 1;
+        const rightPage = leftPage + 1;
 
-        renderSinglePage(leftPageNum, canvasLeftRef.current, renderTaskLeftRef);
-        renderSinglePage(
-          rightPageNum <= numPages ? rightPageNum : 0,
-          canvasRightRef.current,
-          renderTaskRightRef
-        );
+        if (canvasLeftRef.current) {
+          renderPage(leftPage, canvasLeftRef.current, renderTaskLeftRef);
+        }
+        if (canvasRightRef.current && rightPage <= numPages) {
+          renderPage(rightPage, canvasRightRef.current, renderTaskRightRef);
+        }
       }
     }
-  }, [pdfDoc, currentPage, isMobile, zoomLevel, loading, renderSinglePage, numPages]);
+  }, [pdfDoc, numPages, currentPage, zoomLevel, isFullscreen, isMobile, renderPage]);
 
-  // Page Navigation Handlers
-  const nextPage = () => {
-    if (isMobile) {
-      if (currentPage < numPages) {
-        setPageFlipping("next");
-        setCurrentPage((prev) => prev + 1);
-        setTimeout(() => setPageFlipping(null), 300);
-      }
-    } else {
-      if (currentPage === 1 && numPages > 1) {
-        setPageFlipping("next");
-        setCurrentPage(2);
-        setTimeout(() => setPageFlipping(null), 300);
-      } else if (currentPage + 2 <= numPages) {
-        setPageFlipping("next");
-        setCurrentPage((prev) => prev + 2);
-        setTimeout(() => setPageFlipping(null), 300);
-      } else if (currentPage + 1 === numPages) {
-        setPageFlipping("next");
-        setCurrentPage((prev) => prev + 1);
-        setTimeout(() => setPageFlipping(null), 300);
-      }
-    }
-  };
+  // Turn page navigation
+  const prevPage = useCallback(() => {
+    if (currentPage <= 1) return;
+    setPageFlipping("prev");
+    setTimeout(() => setPageFlipping(null), 250);
 
-  const prevPage = () => {
     if (isMobile) {
-      if (currentPage > 1) {
-        setPageFlipping("prev");
-        setCurrentPage((prev) => prev - 1);
-        setTimeout(() => setPageFlipping(null), 300);
-      }
+      setCurrentPage((p) => Math.max(1, p - 1));
     } else {
-      if (currentPage <= 2) {
-        setPageFlipping("prev");
+      if (currentPage <= 3) {
         setCurrentPage(1);
-        setTimeout(() => setPageFlipping(null), 300);
       } else {
-        setPageFlipping("prev");
-        setCurrentPage((prev) => Math.max(1, prev - 2));
-        setTimeout(() => setPageFlipping(null), 300);
+        const currentLeft = currentPage % 2 === 0 ? currentPage : currentPage - 1;
+        setCurrentPage(Math.max(1, currentLeft - 2));
       }
     }
-  };
+  }, [currentPage, isMobile]);
 
-  // Direct Page Input Jump Handler
+  const nextPage = useCallback(() => {
+    if (currentPage >= numPages) return;
+    setPageFlipping("next");
+    setTimeout(() => setPageFlipping(null), 250);
+
+    if (isMobile) {
+      setCurrentPage((p) => Math.min(numPages, p + 1));
+    } else {
+      if (currentPage === 1) {
+        setCurrentPage(2);
+      } else {
+        const currentLeft = currentPage % 2 === 0 ? currentPage : currentPage - 1;
+        setCurrentPage(Math.min(numPages, currentLeft + 2));
+      }
+    }
+  }, [currentPage, numPages, isMobile]);
+
+  // Direct page input submission
   const handlePageInputSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const raw = pageInputText.trim();
-    const match = raw.match(/^(\d+)/);
-    if (match) {
-      let pageNum = parseInt(match[1], 10);
-      pageNum = Math.max(1, Math.min(numPages, pageNum));
-      setCurrentPage(pageNum);
-    } else {
-      setPageInputText(getPageDisplayString(currentPage, numPages, isMobile));
-    }
     setIsEditingPage(false);
+
+    const match = pageInputText.match(/\d+/);
+    if (match) {
+      const targetPage = parseInt(match[0], 10);
+      if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= numPages) {
+        setCurrentPage(targetPage);
+        return;
+      }
+    }
+    setPageInputText(getPageDisplayString(currentPage, numPages, isMobile));
   };
 
   // Fullscreen Handler
-  const toggleFullscreen = () => {
-    const modalElem = document.getElementById("flipbook-modal-container");
-    if (!modalElem) return;
-
-    if (!document.fullscreenElement) {
-      modalElem
-        .requestFullscreen()
-        .then(() => setIsFullscreen(true))
-        .catch(console.error);
-    } else {
-      document
-        .exitFullscreen()
-        .then(() => setIsFullscreen(false))
-        .catch(console.error);
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        const modalEl = document.getElementById("flipbook-modal-container");
+        if (modalEl) {
+          await modalEl.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle failed:", err);
     }
   };
 
-  // Share Handler
-  const handleShare = async () => {
-    const shareData = {
-      title: magazine?.title || "KakatiyaPulse Magazine",
-      text: `Read ${magazine?.title || "KakatiyaPulse Magazine"} on KakatiyaPulse digital reader.`,
-      url: window.location.href,
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        // Fallback to clipboard on cancelled/unsupported share
-      }
+  // Desktop Magnifier Mouse Move Handler
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMagnifierActive || isMobile) return;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    setMagnifierPos({
+      x: mouseX,
+      y: mouseY,
+      visible: true,
+    });
+
+    // Check which canvas the mouse is hovering over
+    const leftCanvas = canvasLeftRef.current;
+    const rightCanvas = canvasRightRef.current;
+    const targetCanvas =
+      rightCanvas && rightCanvas.getBoundingClientRect().left <= mouseX
+        ? rightCanvas
+        : leftCanvas;
+
+    if (!targetCanvas || !magnifierCanvasRef.current) return;
+
+    const rect = targetCanvas.getBoundingClientRect();
+    if (
+      mouseX >= rect.left &&
+      mouseX <= rect.right &&
+      mouseY >= rect.top &&
+      mouseY <= rect.bottom
+    ) {
+      // Relative coordinates on the target canvas
+      const relX = (mouseX - rect.left) * (targetCanvas.width / rect.width);
+      const relY = (mouseY - rect.top) * (targetCanvas.height / rect.height);
+
+      const magCanvas = magnifierCanvasRef.current;
+      const magCtx = magCanvas.getContext("2d");
+      if (!magCtx) return;
+
+      const sourceWidth = 85;
+      const sourceHeight = 85;
+
+      magCtx.clearRect(0, 0, magCanvas.width, magCanvas.height);
+      magCtx.drawImage(
+        targetCanvas,
+        relX - sourceWidth / 2,
+        relY - sourceHeight / 2,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        magCanvas.width,
+        magCanvas.height
+      );
     }
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setShowShareToast(true);
-      setTimeout(() => setShowShareToast(false), 2500);
-    } catch (err) {
-      console.error("Clipboard copy failed:", err);
-    }
+  };
+
+  const handleMouseLeave = () => {
+    setMagnifierPos((prev) => ({ ...prev, visible: false }));
   };
 
   // Mobile Touch Swipe Handlers
@@ -398,24 +433,24 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
   return (
     <div
       id="flipbook-modal-container"
-      className="fixed inset-0 z-50 bg-[#F5F5F0] backdrop-blur-xl flex flex-col justify-between overflow-hidden select-none"
+      className="fixed inset-0 z-50 bg-[#F8F7F3] flex flex-col justify-between overflow-hidden select-none"
     >
-      {/* Top Header Bar */}
-      <header className="bg-white/95 backdrop-blur-md border-b border-[#E5E5E0] px-4 sm:px-6 py-2.5 flex items-center justify-between z-20 shrink-0 shadow-sm">
+      {/* 1. TOP HEADER BAR */}
+      <header className="bg-white border-b border-[#E5E5E0] px-4 sm:px-8 py-3 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-3 overflow-hidden">
-          <Badge variant="gold" className="shrink-0 hidden sm:inline-flex">
-            {magazine.year ? `${magazine.year} Edition` : "Flipbook"}
-          </Badge>
+          <span className="text-[10px] uppercase font-bold tracking-[0.2em] px-2 py-0.5 bg-[#14532D] text-white">
+            {magazine.year ? `${magazine.year} Edition` : "Magazine"}
+          </span>
 
           <h2 className="font-serif text-sm sm:text-base font-bold text-[#14532D] truncate">
             {magazine.title}
           </h2>
 
-          <span className="text-[#E5E5E0] font-light hidden sm:inline">|</span>
+          <span className="text-[#E5E5E0] hidden sm:inline">|</span>
 
-          {/* Page Jump Control (pages: 10-11 / 27) */}
-          <div className="flex items-center gap-1.5 text-xs text-[#555555]">
-            <span className="font-medium hidden sm:inline">pages:</span>
+          {/* Quick Page Jump */}
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#555555]">
+            <span className="uppercase text-[10px] tracking-wider font-semibold">Page:</span>
             <form onSubmit={handlePageInputSubmit} className="inline-flex items-center">
               <input
                 type="text"
@@ -423,7 +458,7 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
                 onChange={(e) => setPageInputText(e.target.value)}
                 onFocus={() => setIsEditingPage(true)}
                 onBlur={() => handlePageInputSubmit()}
-                className="w-14 sm:w-16 h-7 text-center font-mono text-xs font-bold text-[#14532D] bg-[#F8F7F3] border border-[#E5E5E0] rounded px-1 focus:outline-none focus:border-[#C9A227] shadow-inner"
+                className="w-14 h-6 text-center font-mono text-xs font-bold text-[#14532D] bg-[#F8F7F3] border border-[#E5E5E0] rounded-[2px] px-1 focus:outline-none focus:border-[#C9A227]"
                 title="Type page number and press Enter"
               />
             </form>
@@ -431,45 +466,48 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
           </div>
         </div>
 
-        {/* Right Header Controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <a href={magazine.pdfUrl} target="_blank" rel="noopener noreferrer" download>
-            <Button variant="green-outline" size="sm" className="h-8 px-3 text-xs flex items-center gap-1.5 cursor-pointer">
+        {/* Right Header Tools */}
+        <div className="flex items-center gap-3 shrink-0">
+          <a
+            href={magazine.pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="hidden sm:inline-flex"
+          >
+            <Button variant="green-outline" size="sm" className="gap-1.5 cursor-pointer">
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Download PDF</span>
+              <span>Download PDF</span>
             </Button>
           </a>
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F8F7F3] hover:bg-[#E5E5E0] text-[#1C1C1C] hover:text-[#14532D] flex items-center justify-center transition-colors border border-[#E5E5E0] ml-1 cursor-pointer"
+            className="p-1.5 text-[#555555] hover:text-[#14532D] hover:bg-[#E5E5E0] transition-colors border border-[#E5E5E0] rounded-[2px] cursor-pointer"
             title="Close Reader (Esc)"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
       </header>
 
-      {/* Main Flipbook Viewport */}
+      {/* 2. MAIN PUBLICATION DESK VIEWPORT */}
       <main
-        className="flex-1 relative bg-[#F5F5F0] flex items-center justify-center overflow-hidden p-2 sm:p-6"
+        className="flex-1 relative bg-[#F8F7F3] flex items-center justify-center overflow-hidden p-2 sm:p-6 cursor-default"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Loading Progress State */}
         {loading && (
-          <div className="absolute inset-0 z-30 bg-white/95 flex flex-col items-center justify-center space-y-4 p-4">
-            {magazine.coverImageUrl ? (
-              <div className="relative w-36 sm:w-48 aspect-[3/4] rounded-lg overflow-hidden border border-[#E5E5E0] shadow-xl mb-2 animate-pulse">
-                <img src={magazine.coverImageUrl} alt={magazine.title} className="w-full h-full object-cover opacity-80" />
-              </div>
-            ) : null}
+          <div className="absolute inset-0 z-30 bg-[#F8F7F3] flex flex-col items-center justify-center space-y-4 p-4">
             <Loader2 className="w-8 h-8 text-[#14532D] animate-spin" />
             <div className="text-center space-y-2">
-              <p className="text-xs uppercase tracking-widest text-[#14532D] font-serif font-bold">
-                Opening Magazine Edition...
+              <p className="text-xs uppercase tracking-[0.2em] text-[#14532D] font-bold">
+                Opening Digital Publication...
               </p>
-              <div className="w-48 h-1.5 bg-[#E5E5E0] rounded-full overflow-hidden mx-auto">
+              <div className="w-48 h-1 bg-[#E5E5E0] rounded-none overflow-hidden mx-auto">
                 <div
                   className="h-full bg-[#14532D] transition-all duration-200"
                   style={{ width: `${loadingProgress}%` }}
@@ -482,42 +520,37 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
 
         {/* Error Banner */}
         {error && (
-          <div className="absolute inset-0 z-30 bg-white/95 flex flex-col items-center justify-center p-6 text-center space-y-5">
-            <BookOpen className="w-12 h-12 text-[#C9A227]" />
-            <div className="space-y-2">
-              <h3 className="font-serif text-lg font-bold text-[#14532D]">Unable to open this edition.</h3>
+          <div className="absolute inset-0 z-30 bg-white flex flex-col items-center justify-center p-6 text-center space-y-5">
+            <BookOpen className="w-10 h-10 text-[#C9A227]" />
+            <div className="space-y-1">
+              <h3 className="font-serif text-lg font-bold text-[#14532D]">
+                Unable to open this edition.
+              </h3>
               <p className="text-xs text-[#555555] max-w-sm font-mono">{error}</p>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center gap-3">
               <a href={magazine.pdfUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="green" size="sm" className="gap-2">
-                  <BookOpen className="w-4 h-4" /> Open PDF
-                </Button>
-              </a>
-              <a href={magazine.pdfUrl} target="_blank" rel="noopener noreferrer" download>
-                <Button variant="green-outline" size="sm" className="gap-2">
-                  <Download className="w-4 h-4" /> Download PDF
-                </Button>
+                <Button variant="green" size="sm">Open Direct PDF</Button>
               </a>
             </div>
           </div>
         )}
 
-        {/* Floating Left Chevron Navigation Button */}
+        {/* Left Page Turn Chevron Button */}
         <button
           onClick={prevPage}
           disabled={currentPage <= 1}
-          className="absolute left-3 sm:left-6 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-[#14532D] text-[#14532D] hover:text-white border border-[#E5E5E0] flex items-center justify-center transition-all disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-[#14532D] cursor-pointer shadow-xl backdrop-blur-sm"
+          className="absolute left-3 sm:left-6 z-20 w-11 h-11 bg-white hover:bg-[#14532D] text-[#14532D] hover:text-white border border-[#E5E5E0] flex items-center justify-center transition-colors disabled:opacity-20 disabled:pointer-events-none cursor-pointer shadow-sm rounded-[2px]"
           title="Previous Page (Left Arrow)"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
 
-        {/* Floating Right Chevron Navigation Button */}
+        {/* Right Page Turn Chevron Button */}
         <button
           onClick={nextPage}
           disabled={currentPage >= numPages}
-          className="absolute right-3 sm:right-6 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-[#14532D] text-[#14532D] hover:text-white border border-[#E5E5E0] flex items-center justify-center transition-all disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-[#14532D] cursor-pointer shadow-xl backdrop-blur-sm"
+          className="absolute right-3 sm:right-6 z-20 w-11 h-11 bg-white hover:bg-[#14532D] text-[#14532D] hover:text-white border border-[#E5E5E0] flex items-center justify-center transition-colors disabled:opacity-20 disabled:pointer-events-none cursor-pointer shadow-sm rounded-[2px]"
           title="Next Page (Right Arrow)"
         >
           <ChevronRight className="w-6 h-6" />
@@ -525,25 +558,26 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
 
         {/* Book Container with Page Turn Transitions */}
         <div
-          className={`relative max-h-full max-w-full flex items-center justify-center transition-transform duration-300 ease-out ${
+          ref={bookContainerRef}
+          className={`relative max-h-full max-w-full flex items-center justify-center transition-transform duration-200 ease-out ${
             pageFlipping === "next"
-              ? "-translate-x-2 rotate-1"
+              ? "-translate-x-1"
               : pageFlipping === "prev"
-              ? "translate-x-2 -rotate-1"
-              : "translate-x-0 rotate-0"
+              ? "translate-x-1"
+              : "translate-x-0"
           }`}
         >
           {isMobile ? (
             /* Mobile Single Page Canvas Container */
-            <div className="relative rounded-md overflow-hidden border border-[#E5E5E0] shadow-xl bg-white">
-              <canvas ref={canvasLeftRef} className="block max-h-[76vh] object-contain" />
+            <div className="relative overflow-hidden border border-[#E5E5E0] magazine-shadow bg-white">
+              <canvas ref={canvasLeftRef} className="block max-h-[78vh] object-contain" />
             </div>
           ) : (
             /* Desktop Two-Page Spread Book Layout */
-            <div className="relative flex items-center justify-center rounded-lg overflow-hidden border border-[#E5E5E0] shadow-2xl bg-white">
-              {/* Central Book Spine Crease & Shadow */}
+            <div className="relative flex items-center justify-center overflow-hidden border border-[#E5E5E0] magazine-shadow bg-white">
+              {/* Central Spine Shadow */}
               {currentPage > 1 && (
-                <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-8 z-10 pointer-events-none bg-gradient-to-r from-black/10 via-black/20 to-black/10" />
+                <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-6 z-10 pointer-events-none bg-gradient-to-r from-black/10 via-black/20 to-black/10" />
               )}
 
               {/* Left Page Canvas */}
@@ -563,94 +597,137 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
             </div>
           )}
         </div>
+
+        {/* 3. INTERACTIVE CIRCULAR DESKTOP MAGNIFIER LENS */}
+        {isMagnifierActive && !isMobile && magnifierPos.visible && (
+          <div
+            className="fixed pointer-events-none z-50 w-[190px] h-[190px] rounded-full border-4 border-[#14532D] ring-2 ring-[#C9A227] shadow-2xl overflow-hidden bg-white"
+            style={{
+              left: `${magnifierPos.x - 95}px`,
+              top: `${magnifierPos.y - 95}px`,
+            }}
+          >
+            <canvas
+              ref={magnifierCanvasRef}
+              width={190}
+              height={190}
+              className="w-full h-full block"
+            />
+            {/* Center crosshair / brass rim highlight */}
+            <div className="absolute inset-0 rounded-full border border-black/10 pointer-events-none" />
+          </div>
+        )}
       </main>
 
-      {/* Floating Bottom Controls Toolbar */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center bg-white/95 backdrop-blur-md border border-[#E5E5E0] rounded-full px-4 py-2 shadow-2xl gap-3 sm:gap-4 text-[#14532D]">
-        {/* Thumbnails Overview Grid Toggle */}
-        <button
-          onClick={() => setShowThumbnails((prev) => !prev)}
-          className={`p-2 rounded-full transition-colors cursor-pointer ${
-            showThumbnails ? "bg-[#14532D] text-white shadow-md" : "hover:bg-[#F8F7F3] text-[#14532D]"
-          }`}
-          title="Thumbnails Overview Grid"
-        >
-          <LayoutGrid className="w-4 h-4" />
-        </button>
-
-        {/* Table of Contents / Index List Toggle */}
-        <button
-          onClick={() => setShowThumbnails((prev) => !prev)}
-          className="p-2 rounded-full hover:bg-[#F8F7F3] text-[#14532D] transition-colors cursor-pointer hidden sm:block"
-          title="Table of Contents"
-        >
-          <List className="w-4 h-4" />
-        </button>
-
-        <span className="h-4 w-[1px] bg-[#E5E5E0]" />
-
-        {/* Share Button */}
-        <button
-          onClick={handleShare}
-          className="p-2 rounded-full hover:bg-[#F8F7F3] text-[#14532D] transition-colors cursor-pointer"
-          title="Share Magazine Link"
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
-
-        <span className="h-4 w-[1px] bg-[#E5E5E0]" />
-
-        {/* Fullscreen Toggle */}
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-full hover:bg-[#F8F7F3] text-[#14532D] transition-colors cursor-pointer"
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
-        >
-          {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-        </button>
-
-        <span className="h-4 w-[1px] bg-[#E5E5E0] hidden sm:block" />
-
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setZoomLevel((z) => Math.max(0.75, z - 0.25))}
-            className="p-1.5 rounded-full hover:bg-[#F8F7F3] text-[#14532D] transition-colors cursor-pointer"
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <span className="text-[11px] font-mono text-[#C9A227] font-bold w-10 text-center">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <button
-            onClick={() => setZoomLevel((z) => Math.min(2.0, z + 0.25))}
-            className="p-1.5 rounded-full hover:bg-[#F8F7F3] text-[#14532D] transition-colors cursor-pointer"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Thumbnail Overview Drawer Overlay */}
-      {showThumbnails && (
-        <div className="absolute inset-0 z-40 bg-black/75 backdrop-blur-md flex flex-col justify-between p-4 sm:p-8 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-white/20 pb-4 mb-6">
-            <div className="flex items-center gap-2.5 text-white">
-              <LayoutGrid className="w-5 h-5 text-[#E8D48A]" />
-              <h3 className="font-serif text-lg font-bold text-white">Magazine Pages &amp; Spreads</h3>
-            </div>
+      {/* 4. CLEAN EDITORIAL CONTROLS TOOLBAR */}
+      <footer className="bg-white border-t border-[#E5E5E0] px-4 py-2.5 z-30 shrink-0">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 text-[#14532D]">
+          {/* Left: Previous | Page X / Y | Next */}
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowThumbnails(false)}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-              title="Close Overview (Esc)"
+              onClick={prevPage}
+              disabled={currentPage <= 1}
+              className="text-xs uppercase font-bold tracking-wider hover:text-[#C9A227] disabled:opacity-30 disabled:hover:text-[#14532D] cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              Previous
+            </button>
+
+            <span className="text-[#E5E5E0]">|</span>
+
+            <span className="text-xs font-mono font-bold text-[#1C1C1C]">
+              Page {getPageDisplayString(currentPage, numPages, isMobile)} / {numPages}
+            </span>
+
+            <span className="text-[#E5E5E0]">|</span>
+
+            <button
+              onClick={nextPage}
+              disabled={currentPage >= numPages}
+              className="text-xs uppercase font-bold tracking-wider hover:text-[#C9A227] disabled:opacity-30 disabled:hover:text-[#14532D] cursor-pointer"
+            >
+              Next
             </button>
           </div>
 
-          {/* Grid list of all pages */}
+          {/* Right: Secondary Tools */}
+          <div className="flex items-center gap-2 sm:gap-3 text-xs">
+            {/* Magnifier Lens Toggle (Desktop Only) */}
+            {!isMobile && (
+              <button
+                onClick={() => setIsMagnifierActive((prev) => !prev)}
+                className={`p-1.5 rounded-[2px] transition-colors cursor-pointer border ${
+                  isMagnifierActive
+                    ? "bg-[#14532D] text-white border-[#14532D]"
+                    : "border-[#E5E5E0] text-[#555555] hover:text-[#14532D] hover:bg-[#F8F7F3]"
+                }`}
+                title={isMagnifierActive ? "Disable Magnifier Lens" : "Activate Magnifying Glass"}
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Zoom Controls */}
+            <div className="hidden sm:flex items-center gap-1 border border-[#E5E5E0] px-1 py-0.5 rounded-[2px]">
+              <button
+                onClick={() => setZoomLevel((z) => Math.max(0.75, z - 0.2))}
+                className="p-1 text-[#555555] hover:text-[#14532D] cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[10px] font-mono text-[#555555] w-8 text-center">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                onClick={() => setZoomLevel((z) => Math.min(2.0, z + 0.2))}
+                className="p-1 text-[#555555] hover:text-[#14532D] cursor-pointer"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Thumbnails Grid Toggle */}
+            <button
+              onClick={() => setShowThumbnails((prev) => !prev)}
+              className={`p-1.5 rounded-[2px] transition-colors cursor-pointer border ${
+                showThumbnails
+                  ? "bg-[#14532D] text-white border-[#14532D]"
+                  : "border-[#E5E5E0] text-[#555555] hover:text-[#14532D] hover:bg-[#F8F7F3]"
+              }`}
+              title="Page Overview Grid"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-1.5 rounded-[2px] border border-[#E5E5E0] text-[#555555] hover:text-[#14532D] hover:bg-[#F8F7F3] cursor-pointer"
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
+            >
+              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      {/* 5. THUMBNAILS DRAWER OVERLAY */}
+      {showThumbnails && (
+        <div className="absolute inset-0 z-40 bg-black/80 flex flex-col justify-between p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-6">
+            <h3 className="font-serif text-base font-bold text-white uppercase tracking-wider">
+              Issue Pages &amp; Spreads
+            </h3>
+            <button
+              onClick={() => setShowThumbnails(false)}
+              className="p-1 text-white hover:text-[#C9A227] cursor-pointer"
+              title="Close (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 p-2">
             {Array.from({ length: numPages }, (_, i) => i + 1).map((pNum) => {
               const isCurrent = isMobile
@@ -668,31 +745,22 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
                     setCurrentPage(pNum);
                     setShowThumbnails(false);
                   }}
-                  className={`aspect-[3/4] rounded-lg border-2 flex flex-col items-center justify-center p-3 transition-all cursor-pointer shadow-lg ${
+                  className={`aspect-[3/4] border flex flex-col items-center justify-center p-3 transition-colors cursor-pointer ${
                     isCurrent
-                      ? "border-[#C9A227] bg-[#14532D] text-white scale-105 shadow-2xl"
-                      : "border-white/20 bg-white/10 text-white hover:border-[#E8D48A] hover:bg-white/20"
+                      ? "border-[#C9A227] bg-[#14532D] text-white"
+                      : "border-white/20 bg-white/5 text-white hover:border-[#C9A227] hover:bg-white/10"
                   }`}
                 >
-                  <span className="font-serif font-bold text-base sm:text-lg">
+                  <span className="font-serif font-bold text-sm sm:text-base">
                     {pNum === 1 ? "Cover" : `Page ${pNum}`}
                   </span>
-                  <span className="text-[10px] opacity-70 font-mono mt-1">Edition Page {pNum}</span>
+                  <span className="text-[10px] opacity-60 font-mono mt-1">Edition {pNum}</span>
                 </button>
               );
             })}
           </div>
         </div>
       )}
-
-      {/* Share Toast Notification */}
-      {showShareToast && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-[#14532D] text-white px-4 py-2 rounded-full text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-          <Check className="w-4 h-4 text-[#E8D48A]" />
-          Magazine link copied to clipboard!
-        </div>
-      )}
     </div>
   );
 }
-

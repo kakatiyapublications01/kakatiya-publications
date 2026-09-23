@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { Eye } from "lucide-react";
 import { StoredVisitor } from "@/types/visitor";
 
 function getDeviceType(userAgent: string): "Desktop" | "Mobile" | "Tablet" {
@@ -28,7 +27,6 @@ export function LiveVisitorCount() {
   const [sessionId, setSessionId] = useState<string>("");
   const pathname = usePathname();
 
-  // Initialize or retrieve Session ID from sessionStorage
   useEffect(() => {
     try {
       let id = sessionStorage.getItem("kp_session_id");
@@ -42,7 +40,6 @@ export function LiveVisitorCount() {
     }
   }, []);
 
-  // Send Heartbeat to server
   const sendHeartbeat = useCallback(async () => {
     if (!sessionId) return;
 
@@ -78,25 +75,21 @@ export function LiveVisitorCount() {
 
       if (res.ok) {
         const data = await res.json();
-        if (typeof data.count === "number") {
-          setCount(data.count);
+        if (typeof data.activeCount === "number") {
+          setCount(data.activeCount);
         }
       }
     } catch (err) {
-      console.warn("Failed to send live session heartbeat:", err);
+      console.warn("Live heartbeat error:", err);
     }
   }, [sessionId, pathname]);
 
   useEffect(() => {
     if (!sessionId) return;
-
     sendHeartbeat();
 
-    // Heartbeat interval every 25 seconds
     const interval = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        sendHeartbeat();
-      }
+      sendHeartbeat();
     }, 25000);
 
     const handleVisibilityChange = () => {
@@ -112,35 +105,17 @@ export function LiveVisitorCount() {
     };
   }, [sessionId, sendHeartbeat]);
 
-  // Handle SPA navigation: when path changes, send heartbeat to update "Current Page"
-  useEffect(() => {
-    if (!sessionId) return;
-    const handlePathChange = () => {
-       sendHeartbeat();
-    };
-    
-    // Monkey patch pushState/replaceState to detect Next.js client side navigations (or just rely on location change if not using router events)
-    // A simpler way for App Router is to just listen to popstate and rely on the fact that layout re-renders. 
-    // Actually, LiveVisitorCount is rendered in a layout that doesn't unmount, so we should just call sendHeartbeat when pathname changes.
-    // However, we don't have usePathname here. Let's rely on standard interval + visibility for now, as usePathname requires navigation import.
-  }, [sessionId, sendHeartbeat]);
-
-  if (count === null) {
+  if (count === null || count < 1) {
     return null;
   }
 
-  const label = count === 1 ? "person reading now" : "people reading now";
+  const label = count === 1 ? "reader online" : "readers online";
 
   return (
-    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#F8F7F3] border border-[#E5E5E0] text-[#1C1C1C] text-xs font-serif shadow-sm transition-all duration-300 hover:border-[#C9A227]">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#166534] opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#166534]" />
-      </span>
-      <Eye className="w-3.5 h-3.5 text-[#14532D] shrink-0" />
-      <span className="tracking-wide">
-        <strong className="font-semibold text-[#14532D] transition-all duration-200">{count}</strong> {label}
-      </span>
-    </div>
+    <span className="inline-flex items-center gap-1.5 text-xs text-[#555555] font-sans">
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#166534]" />
+      <span className="font-semibold text-[#14532D]">{count}</span>
+      <span>{label}</span>
+    </span>
   );
 }

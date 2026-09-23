@@ -38,7 +38,7 @@
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
-/* Custom scrollbar & editorial utilities */
+/* Custom scrollbar & editorial base styling */
 html {
   color-scheme: light;
   scroll-behavior: smooth;
@@ -51,52 +51,137 @@ body {
   overflow-x: hidden;
 }
 
-/* Editorial styling utilities */
-.gold-accent-line {
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #c9a227 50%, transparent 100%);
+/* Authentic Editorial Typography & Rules */
+.editorial-rule {
+  height: 1px;
+  background-color: #e5e5e0;
+  width: 100%;
 }
 
+.editorial-rule-dark {
+  height: 1px;
+  background-color: #1c1c1c;
+  width: 100%;
+}
+
+.editorial-rule-double {
+  border-top: 3px double #1c1c1c;
+  height: 0;
+  width: 100%;
+}
+
+.editorial-rule-gold {
+  height: 1px;
+  background-color: #c9a227;
+  width: 100%;
+}
+
+.editorial-divider-v {
+  width: 1px;
+  background-color: #e5e5e0;
+}
+
+/* Print publication card - rectangular, crisp, restrained */
+.editorial-box {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e0;
+  border-radius: 0px;
+}
+
+.editorial-box-paper {
+  background-color: #f8f7f3;
+  border: 1px solid #e5e5e0;
+  border-radius: 0px;
+}
+
+/* Physical publication drop shadow */
+.magazine-shadow {
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+.magazine-shadow-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.magazine-shadow-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Backward compatibility */
 .editorial-card {
   background-color: #ffffff;
   border: 1px solid #e5e5e0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.25s ease-in-out;
+  border-radius: 2px;
 }
 
 .editorial-card-hover:hover {
   border-color: #c9a227;
-  box-shadow: 0 8px 25px -5px rgba(201, 162, 39, 0.12);
 }
 
-/* Backward compatibility for glass panel class */
 .glass-panel {
   background-color: #ffffff;
   border: 1px solid #e5e5e0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
-}
-
-.glass-panel-hover {
-  transition: all 0.25s ease-in-out;
-}
-
-.glass-panel-hover:hover {
-  border-color: #c9a227;
-  box-shadow: 0 8px 25px -5px rgba(201, 162, 39, 0.12);
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: #f8f7f3;
 }
 ::-webkit-scrollbar-thumb {
-  background: #e5e5e0;
-  border-radius: 4px;
+  background: #d4d4cb;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #14532d;
 }
+
+/* === CROSS-PLATFORM PROTECTIONS === */
+
+/* Print prevention — blocks Ctrl+P / Cmd+P output */
+@media print {
+  body {
+    display: none !important;
+  }
+}
+
+/* iOS Safari long-press image save prevention */
+img,
+canvas {
+  -webkit-touch-callout: none;
+}
+
+/* Viewport safe-area support for iOS notch / Android nav */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-all {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Reader canvas touch handling — prevent native browser zoom on touch */
+.reader-canvas-container {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* DRM: prevent text selection on protected content */
+.content-protected {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+

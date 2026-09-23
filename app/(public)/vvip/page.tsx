@@ -2,18 +2,16 @@ import React from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
-import { H1, SectionSubtitle, Text } from "@/components/ui/typography";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { EditorialHeader } from "@/components/ui/typography";
 import { getPublishedVvipMembers } from "@/lib/firebase/vvip";
-import { Crown, Sparkles } from "lucide-react";
+import { Crown } from "lucide-react";
 
 export const metadata = {
   title: "VVIP Spotlight",
-  description: "Prestigious VVIP profile features from KakatiyaPulse.",
+  description: "Prestigious VVIP profile features and leader spotlights from KakatiyaPulse.",
 };
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
 
 export default async function VvipPage() {
   const vvipMembers = await getPublishedVvipMembers();
@@ -21,73 +19,124 @@ export default async function VvipPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
-      <main className="flex-1 py-16">
+
+      <main className="flex-1 py-12 sm:py-16">
         <Container size="xl">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <SectionSubtitle>Prestige &amp; Distinction</SectionSubtitle>
-            <H1 gradient>VVIP Spotlight</H1>
-            <Text className="text-[#555555]">
-              An exclusive section showcasing visionary leaders, distinguished icons, and eminent personalities.
-            </Text>
-          </div>
+          <EditorialHeader
+            title="VVIP Spotlight"
+            subtitle="Prestige &amp; Distinction"
+          />
 
           {vvipMembers.length === 0 ? (
-            <div className="text-center py-20 bg-[#F8F7F3] border border-[#E5E5E0] rounded-2xl p-10 max-w-lg mx-auto space-y-4 shadow-sm">
-              <div className="w-16 h-16 rounded-full bg-amber-50 border border-[#C9A227]/30 flex items-center justify-center mx-auto text-[#C9A227]">
-                <Crown className="w-8 h-8" />
+            <div className="text-center py-16 bg-[#F8F7F3] border border-[#E5E5E0] p-10 max-w-md mx-auto space-y-3">
+              <div className="w-10 h-10 border border-[#C9A227] flex items-center justify-center mx-auto text-[#14532D]">
+                <Crown className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-xl font-bold text-[#14532D]">No VVIP Features Published</h3>
-              <p className="text-xs text-[#555555] leading-relaxed">
-                Exclusive VVIP spotlight features will appear here once officially documented and published by the editorial board.
+              <h3 className="font-serif text-lg font-bold text-[#14532D] uppercase tracking-wide">
+                No VVIP Features Published
+              </h3>
+              <p className="text-xs text-[#555555]">
+                Exclusive VVIP spotlight features will appear here once officially documented by the editorial board.
               </p>
             </div>
           ) : (
-            <div className="space-y-12 max-w-5xl mx-auto">
-              {vvipMembers.map((member) => (
-                <Card key={member.id} hoverEffect glow className="p-8 border-[#E5E5E0] bg-white">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                    <div className="lg:col-span-4 aspect-[4/5] rounded-lg bg-[#F8F7F3] border border-[#E5E5E0] flex flex-col justify-end p-6 relative overflow-hidden shadow-md">
-                      {member.imageUrl ? (
-                        <img
-                          src={member.imageUrl}
-                          alt={member.name}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : null}
-                      <div className="absolute top-4 left-4 z-10">
-                        <Badge variant="vvip">{member.badge || "VVIP Prestige"}</Badge>
+            <div className="space-y-16 max-w-5xl mx-auto">
+              {vvipMembers.map((member, idx) => (
+                <div
+                  key={member.id || idx}
+                  className="pb-16 border-b border-[#E5E5E0] last:border-b-0 last:pb-0"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+                    {/* Large Feature Portrait (5 cols) */}
+                    <div className="lg:col-span-5 space-y-3">
+                      <div className="relative aspect-[3/4] w-full bg-[#F8F7F3] border border-[#E5E5E0] magazine-shadow overflow-hidden">
+                        {member.imageUrl ? (
+                          <img
+                            src={member.imageUrl}
+                            alt={member.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-serif text-5xl text-[#14532D]">
+                            {member.name.charAt(0)}
+                          </div>
+                        )}
                       </div>
-                      <div className="space-y-1 z-10 relative bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 rounded text-white">
-                        <h3 className="font-serif text-2xl font-bold text-white">{member.name}</h3>
-                        <p className="text-xs text-[#E8D48A] font-semibold">{member.designation}</p>
+
+                      {/* Portrait Caption */}
+                      <div className="text-center sm:text-left space-y-1 border-t border-[#E5E5E0] pt-2">
+                        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#C9A227] block">
+                          Official Editorial Portrait
+                        </span>
+                        <span className="text-xs font-serif italic text-[#555555]">
+                          KakatiyaPulse Prestige Archives
+                        </span>
                       </div>
                     </div>
 
-                    <div className="lg:col-span-8 space-y-6">
-                      <div>
-                        <Badge variant="vvip" className="mb-3">
-                          <Sparkles className="w-3 h-3 mr-1 inline" />
-                          VVIP Feature
-                        </Badge>
-                        <h2 className="font-serif text-3xl font-bold text-[#14532D]">{member.name}</h2>
-                        <p className="text-base text-[#C9A227] font-semibold mt-1">{member.designation}</p>
+                    {/* Editorial Content (7 cols) */}
+                    <div className="lg:col-span-7 space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-bold tracking-[0.2em] px-2.5 py-1 bg-[#14532D] text-white">
+                            VVIP FEATURE
+                          </span>
+                          <span className="text-xs font-semibold uppercase tracking-wider text-[#C9A227]">
+                            {member.badge || "Prestige Distinction"}
+                          </span>
+                        </div>
+
+                        <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#14532D] tracking-tight leading-tight">
+                          {member.name}
+                        </h2>
+
+                        {member.designation && (
+                          <p className="text-sm sm:text-base font-semibold text-[#1C1C1C] uppercase tracking-wider">
+                            {member.designation}
+                          </p>
+                        )}
                       </div>
 
+                      <div className="h-[2px] w-16 bg-[#C9A227]" />
+
                       {member.quote && (
-                        <blockquote className="border-l-2 border-[#C9A227] pl-4 italic text-[#555555] text-lg">
+                        <blockquote className="font-serif italic text-lg sm:text-xl text-[#1C1C1C] border-l-2 border-[#14532D] pl-4 leading-relaxed">
                           &ldquo;{member.quote}&rdquo;
                         </blockquote>
                       )}
 
-                      {member.bio && <Text className="text-sm leading-relaxed text-[#555555]">{member.bio}</Text>}
+                      {member.bio && (
+                        <div className="text-sm text-[#555555] leading-relaxed space-y-3 font-sans">
+                          {member.bio.split("\n\n").map((para, i) => (
+                            <p key={i}>{para}</p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Dossier details */}
+                      <div className="pt-4 border-t border-[#E5E5E0] grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <span className="block uppercase text-[10px] text-[#555555] font-semibold tracking-wider">
+                            Category
+                          </span>
+                          <span className="font-medium text-[#1C1C1C]">Leadership &amp; Distinction</span>
+                        </div>
+                        <div>
+                          <span className="block uppercase text-[10px] text-[#555555] font-semibold tracking-wider">
+                            Archive Status
+                          </span>
+                          <span className="font-medium text-[#14532D]">Permanent Profile Record</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </Card>
+                </div>
               ))}
             </div>
           )}
         </Container>
       </main>
+
       <Footer />
     </div>
   );
