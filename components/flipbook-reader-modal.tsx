@@ -469,18 +469,8 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
 
         {/* Right Header Tools */}
         <div className="flex items-center gap-3 shrink-0">
-          <a
-            href={magazine.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            className="hidden sm:inline-flex"
-          >
-            <Button variant="green-outline" size="sm" className="gap-1.5 cursor-pointer">
-              <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
-            </Button>
-          </a>
+
+
 
           <button
             onClick={onClose}
