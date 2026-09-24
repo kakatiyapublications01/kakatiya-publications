@@ -238,6 +238,7 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
         const renderContext = {
           canvasContext: ctx,
           viewport: viewport,
+          canvas: canvas,
         };
 
         const renderTask = page.render(renderContext);

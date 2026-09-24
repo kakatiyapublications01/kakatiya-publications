@@ -39,6 +39,7 @@ export interface VipMember {
   posterUrl?: string;
   imageUrl?: string;
   profileDetails?: string;
+  bio?: string;
   category?: string;
   location?: string;
   status: PublishStatus;
