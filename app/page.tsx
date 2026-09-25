@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
@@ -12,6 +13,9 @@ import { getPublishedMagazines } from "@/lib/firebase/magazines";
 import { getPublishedVvipMembers } from "@/lib/firebase/vvip";
 import { getPublishedStories } from "@/lib/firebase/stories";
 import { getPublishedVipMembers } from "@/lib/firebase/vip";
+
+import { HeroScrollDemo } from "@/components/container-scroll-animation-demo";
+import KakatiyaPulseSplash from "@/components/ui/sparkles-fullpage-demo";
 import {
   BookOpen,
   ArrowRight,
@@ -45,8 +49,35 @@ export default async function HomePage() {
     year: "numeric",
   }).format(new Date());
 
+  const plainMagazine = latestMagazine
+    ? {
+        id: latestMagazine.id,
+        title: latestMagazine.title || "",
+        year: latestMagazine.year || 2026,
+        pdfUrl: latestMagazine.pdfUrl || "",
+        coverImageUrl: latestMagazine.coverImageUrl || "",
+        description: latestMagazine.description || "",
+        pageCount: latestMagazine.pageCount || latestMagazine.pages || 64,
+        status: (latestMagazine.status || "published") as "published" | "draft" | "archived",
+        createdAt: typeof latestMagazine.createdAt === "string" ? latestMagazine.createdAt : "",
+        updatedAt: typeof latestMagazine.updatedAt === "string" ? latestMagazine.updatedAt : "",
+      }
+    : null;
+
+  const plainStories = stories.map((s) => ({
+    id: s.id,
+    title: s.title,
+    slug: s.slug || "",
+    category: s.category || "Feature",
+    excerpt: s.excerpt || "",
+    date: s.date || "",
+  }));
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* Editorial Particle Intro Splash Overlay */}
+      <KakatiyaPulseSplash />
+
       <Header />
 
       <main className="flex-1">
@@ -69,6 +100,9 @@ export default async function HomePage() {
             </div>
           </Container>
         </section>
+
+        {/* HERO SCROLL ANIMATION */}
+        <HeroScrollDemo magazine={plainMagazine} stories={plainStories} />
 
         {/* 2. MAIN FEATURE: SPECIAL EDITION SPREAD */}
         <section className="py-12 sm:py-16 border-b border-[#E5E5E0] bg-white">

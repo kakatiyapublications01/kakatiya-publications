@@ -6,7 +6,7 @@ import {
   ChevronRight,
   Maximize,
   Minimize,
-  Download,
+
   X,
   ZoomIn,
   ZoomOut,
@@ -110,6 +110,17 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentPage, numPages, isMobile, showThumbnails]);
+
+  // Block PrintScreen and Ctrl+S to discourage screenshots/downloads
+  useEffect(() => {
+    const blockKeys = (e: KeyboardEvent) => {
+      if (e.key === 'PrintScreen' || (e.ctrlKey && e.key.toLowerCase() === 's')) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', blockKeys);
+    return () => window.removeEventListener('keydown', blockKeys);
+  }, []);
 
   // Load PDF document from URL
   useEffect(() => {
@@ -434,7 +445,7 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
   return (
     <div
       id="flipbook-modal-container"
-      className="fixed inset-0 z-50 bg-[#F8F7F3] flex flex-col justify-between overflow-hidden select-none"
+      className="fixed inset-0 z-50 bg-[#F8F7F3] flex flex-col justify-between overflow-hidden select-none" onContextMenu={(e)=>e.preventDefault()}
     >
       {/* 1. TOP HEADER BAR */}
       <header className="bg-white border-b border-[#E5E5E0] px-4 sm:px-8 py-3 flex items-center justify-between z-20 shrink-0">
@@ -481,6 +492,8 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
           </button>
         </div>
       </header>
+      {/* Watermark overlay */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-4xl font-bold text-[#14532D]/10 rotate-[-30deg] select-none">KAKATIYAPULSE - OFFICIAL PUBLICATION</div>
 
       {/* 2. MAIN PUBLICATION DESK VIEWPORT */}
       <main
@@ -520,9 +533,7 @@ export function FlipbookReaderModal({ magazine, onClose }: FlipbookReaderModalPr
               <p className="text-xs text-[#555555] max-w-sm font-mono">{error}</p>
             </div>
             <div className="flex items-center gap-3">
-              <a href={magazine.pdfUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="green" size="sm">Open Direct PDF</Button>
-              </a>
+              {/* Direct PDF access removed for view-only policy */}
             </div>
           </div>
         )}

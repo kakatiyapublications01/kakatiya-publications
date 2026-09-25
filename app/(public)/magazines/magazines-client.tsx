@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BookOpen, Download, FileX } from "lucide-react";
+import { BookOpen, FileX } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { EditorialHeader } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
@@ -9,16 +9,26 @@ import { Magazine } from "@/types";
 import dynamic from "next/dynamic";
 import { getPublishedMagazines } from "@/lib/firebase/magazines";
 
+import { MultiStepLoader } from "@/components/ui/multi-step-loader";
+
 const FlipbookReaderModal = dynamic(
   () => import("@/components/flipbook-reader-modal").then((mod) => mod.FlipbookReaderModal),
   { ssr: false }
 );
+
+const magazineLoadingSteps = [
+  { text: "కాకతీయ పబ్లికేషన్స్ ప్రత్యేక సంచిక 2026 సిద్ధమవుతోంది..." },
+  { text: "ఆంధ్రప్రదేశ్ అభివృద్ధి & ప్రగతి నివేదికలు ప్రాసెస్ అవుతున్నాయి..." },
+  { text: "నాయకత్వ విశేషాలు & సంక్షేమ కథనాలు లోడ్ అవుతున్నాయి..." },
+  { text: "డిజిటల్ ఫ్లిప్బుక్ వర్షన్ సిద్ధంగా ఉంది!" },
+];
 
 export function MagazinesClient() {
   const [magazines, setMagazines] = useState<Magazine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeMagazine, setActiveMagazine] = useState<Magazine | null>(null);
+  const [pendingMagazine, setPendingMagazine] = useState<Magazine | null>(null);
 
   useEffect(() => {
     async function fetchMagazines() {
@@ -82,12 +92,24 @@ export function MagazinesClient() {
                 key={mag.id || i}
                 magazine={mag}
                 isLatest={i === 0}
-                onOpenReader={(m) => setActiveMagazine(m)}
+                onOpenReader={(m) => setPendingMagazine(m)}
               />
             ))}
           </div>
         )}
       </Container>
+
+      {/* Telugu Multi-Step Loader Overlay */}
+      <MultiStepLoader
+        loadingStates={magazineLoadingSteps}
+        loading={Boolean(pendingMagazine)}
+        duration={1200}
+        loop={false}
+        onComplete={() => {
+          setActiveMagazine(pendingMagazine);
+          setPendingMagazine(null);
+        }}
+      />
 
       {/* Interactive Flipbook Reader Modal */}
       <FlipbookReaderModal

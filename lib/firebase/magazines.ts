@@ -23,10 +23,19 @@ export async function getPublishedMagazines(): Promise<Magazine[]> {
       where("status", "==", "published")
     );
     const snapshot = await getDocs(q);
-    const docs = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as Magazine[];
+    const docs = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      const serverCreatedAt = data.serverCreatedAt?.toDate
+        ? data.serverCreatedAt.toDate().toISOString()
+        : data.serverCreatedAt?.seconds
+        ? new Date(data.serverCreatedAt.seconds * 1000).toISOString()
+        : undefined;
+      return {
+        id: docSnap.id,
+        ...data,
+        ...(serverCreatedAt ? { serverCreatedAt } : {}),
+      };
+    }) as Magazine[];
     return docs.sort((a, b) => {
       if ((b.year || 0) !== (a.year || 0)) return (b.year || 0) - (a.year || 0);
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
