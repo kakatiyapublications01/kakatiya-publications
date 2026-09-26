@@ -4,6 +4,9 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 
+// Development admin email whitelist (remove for production)
+const DEV_ADMIN_EMAILS = ["admin@kakatiyapulse.com", "test.admin@example.com", "sanjay@kakatiyapublications.com"];
+
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -25,7 +28,12 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user) {
+    return null;
+  }
+  // Allow dev admins based on email whitelist
+  const isDevAdmin = DEV_ADMIN_EMAILS.includes(user.email ?? "");
+  if (!isAdmin && !isDevAdmin) {
     return null;
   }
 
