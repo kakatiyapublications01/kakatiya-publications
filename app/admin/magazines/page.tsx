@@ -166,7 +166,7 @@ function AdminMagazinesContent() {
       await createMagazine({
         title: formTitle.trim(),
         year: Number(formYear),
-        month: formEditionLabel.trim() || undefined,
+        ...(formEditionLabel.trim() ? { month: formEditionLabel.trim() } : {}),
         pageCount: Number(formPageCount),
         description: formDescription.trim(),
         featured: formFeatured,
@@ -210,7 +210,7 @@ function AdminMagazinesContent() {
       await updateMagazine(editingMagazine.id, {
         title: editTitle.trim(),
         year: Number(editYear),
-        month: editEditionLabel.trim() || undefined,
+        ...(editEditionLabel.trim() ? { month: editEditionLabel.trim() } : {}),
         pageCount: Number(editPageCount),
         description: editDescription.trim(),
         featured: editFeatured,

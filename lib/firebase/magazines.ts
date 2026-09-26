@@ -79,12 +79,23 @@ export async function getMagazineById(id: string): Promise<Magazine | null> {
   return { id: snapshot.id, ...snapshot.data() } as Magazine;
 }
 
+function sanitizeData<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export async function createMagazine(
   data: Omit<Magazine, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
   await ensureAdminAuth();
+  const cleanData = sanitizeData(data as unknown as Record<string, unknown>);
   const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-    ...data,
+    ...cleanData,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     serverCreatedAt: serverTimestamp(),
@@ -106,9 +117,10 @@ export async function updateMagazine(
   data: Partial<Omit<Magazine, "id" | "createdAt">>
 ): Promise<void> {
   await ensureAdminAuth();
+  const cleanData = sanitizeData(data as unknown as Record<string, unknown>);
   const docRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(docRef, {
-    ...data,
+    ...cleanData,
     updatedAt: new Date().toISOString(),
   });
 }

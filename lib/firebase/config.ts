@@ -20,11 +20,12 @@ export const app = isNewApp ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 
-// Resilient Firestore initialization with long-polling fallback for unreliable networks / firewalls
+// Resilient Firestore initialization with long-polling fallback and ignoreUndefinedProperties
 function getFirestoreInstance() {
   try {
     return initializeFirestore(app, {
       experimentalAutoDetectLongPolling: true,
+      ignoreUndefinedProperties: true,
     });
   } catch {
     return getFirestore(app);
