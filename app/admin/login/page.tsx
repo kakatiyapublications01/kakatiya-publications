@@ -17,39 +17,25 @@ export default function AdminLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
+  // Whitelisted admin emails — these skip the Firebase admin claim check
+  const ADMIN_EMAILS = [
+    "sanjay@kakatiyapublications.com",
+    "admin@kakatiyapulse.com",
+  ];
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
 
     try {
-      const { user: firebaseUser, isAdmin } = await loginAdmin(email, password);
+      const { isAdmin } = await loginAdmin(email, password);
+      const isWhitelisted = ADMIN_EMAILS.includes(email.toLowerCase().trim());
 
-      if (!isAdmin) {
-        // Attempt to provision admin claim via server API for whitelisted emails
-        try {
-          const res = await fetch("/api/admin/set-claim", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-          });
-
-          if (res.ok) {
-            // Force-refresh the ID token to pick up the new admin claim
-            await firebaseUser.getIdToken(true);
-            router.push("/admin/dashboard");
-            return;
-          } else {
-            const data = await res.json().catch(() => ({}));
-            setError(data.error || "Access Denied: Your account does not have administrator privilege claims.");
-            setSubmitting(false);
-            return;
-          }
-        } catch {
-          setError("Access Denied: Your account does not have administrator privilege claims.");
-          setSubmitting(false);
-          return;
-        }
+      if (!isAdmin && !isWhitelisted) {
+        setError("Access Denied: Your account does not have administrator privilege claims.");
+        setSubmitting(false);
+        return;
       }
 
       router.push("/admin/dashboard");
@@ -59,6 +45,7 @@ export default function AdminLoginPage() {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F7F3] p-4 relative overflow-hidden">

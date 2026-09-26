@@ -33,11 +33,18 @@ export async function verifyUserAdminClaim(user: User | null): Promise<boolean> 
   }
 }
 
+// Admin email whitelist — these are treated as admin regardless of Firebase claims
+const ADMIN_EMAILS = [
+  "sanjay@kakatiyapublications.com",
+  "admin@kakatiyapulse.com",
+];
+
 export function subscribeAuthState(callback: (user: User | null, isAdmin: boolean) => void) {
   return onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const isAdmin = await verifyUserAdminClaim(user);
-      callback(user, isAdmin);
+      const claimAdmin = await verifyUserAdminClaim(user);
+      const whitelisted = ADMIN_EMAILS.includes(user.email ?? "");
+      callback(user, claimAdmin || whitelisted);
     } else {
       callback(null, false);
     }
