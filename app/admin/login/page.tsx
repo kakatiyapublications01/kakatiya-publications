@@ -23,12 +23,33 @@ export default function AdminLoginPage() {
     setSubmitting(true);
 
     try {
-      const { isAdmin } = await loginAdmin(email, password);
+      const { user: firebaseUser, isAdmin } = await loginAdmin(email, password);
 
       if (!isAdmin) {
-        setError("Access Denied: Your account does not have administrator privilege claims.");
-        setSubmitting(false);
-        return;
+        // Attempt to provision admin claim via server API for whitelisted emails
+        try {
+          const res = await fetch("/api/admin/set-claim", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+
+          if (res.ok) {
+            // Force-refresh the ID token to pick up the new admin claim
+            await firebaseUser.getIdToken(true);
+            router.push("/admin/dashboard");
+            return;
+          } else {
+            const data = await res.json().catch(() => ({}));
+            setError(data.error || "Access Denied: Your account does not have administrator privilege claims.");
+            setSubmitting(false);
+            return;
+          }
+        } catch {
+          setError("Access Denied: Your account does not have administrator privilege claims.");
+          setSubmitting(false);
+          return;
+        }
       }
 
       router.push("/admin/dashboard");

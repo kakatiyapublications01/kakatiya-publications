@@ -4,21 +4,24 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 
-// Development admin email whitelist (remove for production)
-const DEV_ADMIN_EMAILS = ["admin@kakatiyapulse.com", "test.admin@example.com", "sanjay@kakatiyapublications.com"];
+// Admin email whitelist — these emails bypass the Firebase admin claim check
+const ADMIN_EMAILS = [
+  "sanjay@kakatiyapublications.com",
+  "admin@kakatiyapulse.com",
+];
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, loading } = useAuth();
-  // Development admin check (matches the whitelist defined above)
-  const isDevAdmin = DEV_ADMIN_EMAILS.includes(user?.email ?? "");
   const router = useRouter();
 
+  const isWhitelisted = ADMIN_EMAILS.includes(user?.email ?? "");
+  const hasAccess = isAdmin || isWhitelisted;
+
   useEffect(() => {
-    if (!loading && (!user || (!isAdmin && !isDevAdmin))) {
-    // original logic replaced
+    if (!loading && (!user || !hasAccess)) {
       router.push("/admin/login");
     }
-  }, [user, isAdmin, loading, router]);
+  }, [user, hasAccess, loading, router]);
 
   if (loading) {
     return (
@@ -31,12 +34,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-  // Allow dev admins based on email whitelist
-  const isDevAdmin = DEV_ADMIN_EMAILS.includes(user.email ?? "");
-  if (!isAdmin && !isDevAdmin) {
+  if (!user || !hasAccess) {
     return null;
   }
 
