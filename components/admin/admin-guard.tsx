@@ -9,10 +9,13 @@ const DEV_ADMIN_EMAILS = ["admin@kakatiyapulse.com", "test.admin@example.com", "
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, loading } = useAuth();
+  // Development admin check (matches the whitelist defined above)
+  const isDevAdmin = DEV_ADMIN_EMAILS.includes(user?.email ?? "");
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
+    if (!loading && (!user || (!isAdmin && !isDevAdmin))) {
+    // original logic replaced
       router.push("/admin/login");
     }
   }, [user, isAdmin, loading, router]);
