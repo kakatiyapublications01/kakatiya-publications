@@ -11,6 +11,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db, auth } from "./config";
+import { ensureAdminAuth } from "./auth";
 import { Story, PublishStatus } from "@/types";
 
 const COLLECTION_NAME = "stories";
@@ -38,13 +39,7 @@ export async function getPublishedStories(): Promise<Story[]> {
 }
 
 export async function getAllStoriesAdmin(): Promise<Story[]> {
-  if (auth.currentUser) {
-    try {
-      await auth.currentUser.getIdToken(true);
-    } catch (e) {
-      console.warn("Token refresh error:", e);
-    }
-  }
+  await ensureAdminAuth();
   try {
     const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
@@ -79,6 +74,7 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
 export async function createStory(
   data: Omit<Story, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
+  await ensureAdminAuth();
   const docRef = await addDoc(collection(db, COLLECTION_NAME), {
     ...data,
     createdAt: new Date().toISOString(),
@@ -91,6 +87,7 @@ export async function updateStory(
   id: string,
   data: Partial<Omit<Story, "id" | "createdAt">>
 ): Promise<void> {
+  await ensureAdminAuth();
   const docRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(docRef, {
     ...data,
@@ -99,6 +96,7 @@ export async function updateStory(
 }
 
 export async function updateStoryStatus(id: string, status: PublishStatus): Promise<void> {
+  await ensureAdminAuth();
   const docRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(docRef, {
     status,
@@ -107,6 +105,7 @@ export async function updateStoryStatus(id: string, status: PublishStatus): Prom
 }
 
 export async function deleteStory(id: string): Promise<void> {
+  await ensureAdminAuth();
   const docRef = doc(db, COLLECTION_NAME, id);
   await deleteDoc(docRef);
 }

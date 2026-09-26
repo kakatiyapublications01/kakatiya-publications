@@ -15,6 +15,7 @@ import {
   deleteMagazine,
 } from "@/lib/firebase/magazines";
 import { uploadMagazinePdf, uploadMagazineCoverImage } from "@/lib/firebase/storage";
+import { ensureAdminAuth } from "@/lib/firebase/auth";
 import dynamic from "next/dynamic";
 import {
   Plus, X, Eye, Edit, Trash2, BookOpen, Upload, ImageIcon,
@@ -147,6 +148,9 @@ function AdminMagazinesContent() {
 
     try {
       setIsSubmitting(true);
+      setUploadProgress(5);
+
+      await ensureAdminAuth();
       setUploadProgress(10);
 
       setUploadStep("cover");
@@ -177,6 +181,7 @@ function AdminMagazinesContent() {
       setShowAddModal(false);
       await loadMagazines();
     } catch (err: unknown) {
+      console.error("Magazine publishing error:", err);
       const msg = err instanceof Error ? err.message : "Upload failed. Please check your connection and try again.";
       setFormError(msg);
     } finally {
@@ -613,6 +618,14 @@ function AdminMagazinesContent() {
                     />
                   </div>
                   <p className="text-xs text-[#555555] font-mono">{uploadProgress}% complete</p>
+                </div>
+              )}
+
+              {/* Bottom error display so it's always in view */}
+              {formError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{formError}</span>
                 </div>
               )}
 

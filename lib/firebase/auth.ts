@@ -50,3 +50,18 @@ export function subscribeAuthState(callback: (user: User | null, isAdmin: boolea
     }
   });
 }
+
+export async function ensureAdminAuth(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    if (typeof auth.authStateReady === "function") {
+      await auth.authStateReady();
+    }
+    if (auth.currentUser) {
+      await auth.currentUser.getIdToken(true);
+    }
+  } catch (error) {
+    console.warn("ensureAdminAuth token refresh error:", error);
+  }
+}
+

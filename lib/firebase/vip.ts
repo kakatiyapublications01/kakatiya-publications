@@ -10,6 +10,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db, auth } from "./config";
+import { ensureAdminAuth } from "./auth";
 import { VipMember, PublishStatus } from "@/types";
 
 const COLLECTION_NAME = "vip";
@@ -33,13 +34,7 @@ export async function getPublishedVipMembers(): Promise<VipMember[]> {
 }
 
 export async function getAllVipMembersAdmin(): Promise<VipMember[]> {
-  if (auth.currentUser) {
-    try {
-      await auth.currentUser.getIdToken(true);
-    } catch (e) {
-      console.warn("Token refresh error:", e);
-    }
-  }
+  await ensureAdminAuth();
   try {
     const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
@@ -66,6 +61,7 @@ export async function getAllVipMembersAdmin(): Promise<VipMember[]> {
 export async function createVipMember(
   data: Omit<VipMember, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
+  await ensureAdminAuth();
   const docRef = await addDoc(collection(db, COLLECTION_NAME), {
     ...data,
     createdAt: new Date().toISOString(),
@@ -78,6 +74,7 @@ export async function updateVipMember(
   id: string,
   data: Partial<Omit<VipMember, "id" | "createdAt">>
 ): Promise<void> {
+  await ensureAdminAuth();
   const docRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(docRef, {
     ...data,
@@ -86,6 +83,7 @@ export async function updateVipMember(
 }
 
 export async function updateVipMemberStatus(id: string, status: PublishStatus): Promise<void> {
+  await ensureAdminAuth();
   const docRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(docRef, {
     status,
@@ -94,6 +92,7 @@ export async function updateVipMemberStatus(id: string, status: PublishStatus): 
 }
 
 export async function deleteVipMember(id: string): Promise<void> {
+  await ensureAdminAuth();
   const docRef = doc(db, COLLECTION_NAME, id);
   await deleteDoc(docRef);
 }

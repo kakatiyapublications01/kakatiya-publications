@@ -1,5 +1,6 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "./config";
+import { ensureAdminAuth } from "./auth";
 
 const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -7,6 +8,7 @@ const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export async function uploadMagazinePdf(file: File, folderName: string = "magazines"): Promise<string> {
+  await ensureAdminAuth();
   if (file.type !== "application/pdf") {
     throw new Error("Invalid document type. Only PDF files are allowed.");
   }
@@ -25,6 +27,7 @@ export async function uploadMagazinePdf(file: File, folderName: string = "magazi
 }
 
 export async function uploadPosterImage(file: File, folderName: string = "posters"): Promise<string> {
+  await ensureAdminAuth();
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Invalid image format. Allowed formats: JPEG, PNG, WEBP.");
   }
@@ -50,6 +53,7 @@ export async function uploadMagazineCoverImage(file: File, folderName: string = 
 
 export async function deleteStorageFileByUrl(fileUrl: string): Promise<void> {
   try {
+    await ensureAdminAuth();
     const fileRef = ref(storage, fileUrl);
     await deleteObject(fileRef);
   } catch (error) {

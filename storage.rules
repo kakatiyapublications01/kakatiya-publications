@@ -7,7 +7,11 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == "sanjay@kakatiyapublications.com" ||
+        request.auth.token.email == "admin@kakatiyapulse.com"
+      );
     }
 
     function isValidPdf() {
@@ -26,19 +30,22 @@ service firebase.storage {
     // Magazine PDFs & Cover Images
     match /magazines/{allPaths=**} {
       allow read: if true;
-      allow write, delete: if isAdmin() && (isValidPdf() || isValidImage());
+      allow create, update: if isAdmin() && (isValidPdf() || isValidImage());
+      allow delete: if isAdmin();
     }
 
     // Posters & Images
     match /posters/{allPaths=**} {
       allow read: if true;
-      allow write, delete: if isAdmin() && isValidImage();
+      allow create, update: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
     }
 
     // General Uploads
     match /uploads/{allPaths=**} {
       allow read: if true;
-      allow write, delete: if isAdmin() && (isValidImage() || isValidPdf());
+      allow create, update: if isAdmin() && (isValidImage() || isValidPdf());
+      allow delete: if isAdmin();
     }
   }
 }
