@@ -41,6 +41,7 @@ interface DashboardStats {
   vipCount: number;
   vvipCount: number;
   liveVisitors: number;
+  totalVisitors: number;
   visitorsToday: number;
   visitorsThisMonth: number;
   returningVisitors: number;
@@ -53,18 +54,20 @@ function AdminDashboardContent() {
   const [recentActivity, setRecentActivity] = useState<{ label: string; time: string; type: string }[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadStats() {
       try {
-        // Refresh token to ensure admin claim is present for client-side Firestore reads
         if (firebaseAuth.currentUser) {
           try { await firebaseAuth.currentUser.getIdToken(true); } catch (e) { /* ignore */ }
         }
-        const [magazines, stories, vip, vvip, visitorsSnap] = await Promise.all([
+        const [magazines, stories, vip, vvip, visitorsRes, liveRes] = await Promise.all([
           getAllMagazinesAdmin().catch(() => []),
           getAllStoriesAdmin().catch(() => []),
           getAllVipMembersAdmin().catch(() => []),
           getAllVvipMembersAdmin().catch(() => []),
-          getDocs(query(collection(db, "visitors"))).catch(() => ({ forEach: () => {} } as any)),
+          fetch("/api/visitors").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch("/api/live-sessions").then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ]);
 
         const pubMags = magazines.filter((m) => m.status === "published");
@@ -72,69 +75,79 @@ function AdminDashboardContent() {
         const pubStories = stories.filter((s) => s.status === "published");
         const draftStories = stories.filter((s) => s.status === "draft");
 
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const liveCount = liveRes && typeof liveRes.count === "number" ? liveRes.count : 0;
+        const totalVis = visitorsRes && typeof visitorsRes.total === "number" ? visitorsRes.total : 0;
+        const visToday = visitorsRes && typeof visitorsRes.today === "number" ? visitorsRes.today : 0;
+        const visMonth = visitorsRes && typeof visitorsRes.thisMonth === "number" ? visitorsRes.thisMonth : 0;
+        const visReturning = visitorsRes && typeof visitorsRes.returning === "number" ? visitorsRes.returning : 0;
 
-        let visitorsToday = 0;
-        let visitorsThisMonth = 0;
-        let returningVisitors = 0;
-
-        visitorsSnap.forEach((doc: any) => {
-          const data = doc.data();
-          const createdAt = new Date(data.createdAt || 0).getTime();
-          const lastVisitAt = new Date(data.lastVisitAt || createdAt).getTime();
-
-          if (lastVisitAt >= startOfToday) visitorsToday++;
-          if (lastVisitAt >= startOfMonth) visitorsThisMonth++;
-          if (lastVisitAt - createdAt > 1000 * 60 * 60 * 24) returningVisitors++;
-        });
-
-        setStats({
-          magazinesPublished: pubMags.length,
-          magazinesDraft: draftMags.length,
-          storiesPublished: pubStories.length,
-          storiesDraft: draftStories.length,
-          vipCount: vip.length,
-          vvipCount: vvip.length,
-          liveVisitors: 0,
-          visitorsToday,
-          visitorsThisMonth,
-          returningVisitors,
-        });
-
-        // Build recent activity from real data
-        const activity: { label: string; time: string; type: string }[] = [];
-        magazines.slice(0, 2).forEach((m) => {
-          activity.push({
-            label: `Magazine: ${m.title}`,
-            time: m.updatedAt || m.createdAt || "",
-            type: "magazine",
+        if (isMounted) {
+          setStats({
+            magazinesPublished: pubMags.length,
+            magazinesDraft: draftMags.length,
+            storiesPublished: pubStories.length,
+            storiesDraft: draftStories.length,
+            vipCount: vip.length,
+            vvipCount: vvip.length,
+            liveVisitors: liveCount,
+            totalVisitors: totalVis,
+            visitorsToday: visToday,
+            visitorsThisMonth: visMonth,
+            returningVisitors: visReturning,
           });
-        });
-        stories.slice(0, 2).forEach((s) => {
-          activity.push({
-            label: `Story: ${s.title}`,
-            time: s.updatedAt || s.createdAt || "",
-            type: "story",
+
+          // Build recent activity from real data
+          const activity: { label: string; time: string; type: string }[] = [];
+          magazines.slice(0, 2).forEach((m) => {
+            activity.push({
+              label: `Magazine: ${m.title}`,
+              time: m.updatedAt || m.createdAt || "",
+              type: "magazine",
+            });
           });
-        });
-        activity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-        setRecentActivity(activity.slice(0, 5));
+          stories.slice(0, 2).forEach((s) => {
+            activity.push({
+              label: `Story: ${s.title}`,
+              time: s.updatedAt || s.createdAt || "",
+              type: "story",
+            });
+          });
+          activity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+          setRecentActivity(activity.slice(0, 5));
+        }
       } catch (err) {
         console.error("Dashboard stats error:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
-    // Also fetch live count
-    async function loadLiveCount() {
+    async function pollLiveCount() {
       try {
-        const res = await fetch("/api/live-sessions");
-        if (res.ok) {
-          const data = await res.json();
-          setStats((prev) => prev ? { ...prev, liveVisitors: data.count || 0 } : prev);
+        const [liveRes, visitorsRes] = await Promise.all([
+          fetch("/api/live-sessions"),
+          fetch("/api/visitors"),
+        ]);
+        if (isMounted) {
+          if (liveRes.ok) {
+            const data = await liveRes.json();
+            const count = typeof data.count === "number" ? data.count : typeof data.activeCount === "number" ? data.activeCount : 0;
+            setStats((prev) => (prev ? { ...prev, liveVisitors: count } : prev));
+          }
+          if (visitorsRes.ok) {
+            const visData = await visitorsRes.json();
+            setStats((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    totalVisitors: visData.total ?? prev.totalVisitors,
+                    visitorsToday: visData.today ?? prev.visitorsToday,
+                    visitorsThisMonth: visData.thisMonth ?? prev.visitorsThisMonth,
+                    returningVisitors: visData.returning ?? prev.returningVisitors,
+                  }
+                : prev
+            );
+          }
         }
       } catch {
         // Non-critical
@@ -142,7 +155,11 @@ function AdminDashboardContent() {
     }
 
     loadStats();
-    loadLiveCount();
+    const interval = setInterval(pollLiveCount, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const statCards = [
@@ -248,11 +265,7 @@ function AdminDashboardContent() {
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#F8F7F3] p-3 rounded-lg border border-[#E5E5E0]">
-                  <p className="text-[10px] uppercase tracking-wider text-[#555555] mb-1">Visitors Today</p>
-                  <p className="font-serif text-xl font-bold text-[#14532D]">{stats?.visitorsToday ?? 0}</p>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="bg-[#14532D]/5 p-3 rounded-lg border border-[#14532D]/20 relative overflow-hidden">
                   <div className="absolute top-2 right-2">
                     <span className="relative flex h-2 w-2">
@@ -261,15 +274,23 @@ function AdminDashboardContent() {
                     </span>
                   </div>
                   <p className="text-[10px] uppercase tracking-wider text-[#14532D] mb-1 font-semibold">Live Now</p>
-                  <p className="font-serif text-xl font-bold text-[#14532D]">{stats?.liveVisitors ?? 0}</p>
+                  <p className="font-serif text-2xl font-bold text-[#14532D] font-mono">{stats?.liveVisitors ?? 0}</p>
+                </div>
+                <div className="bg-[#F8F7F3] p-3 rounded-lg border border-[#E5E5E0]">
+                  <p className="text-[10px] uppercase tracking-wider text-[#555555] mb-1">Total Visitors</p>
+                  <p className="font-serif text-2xl font-bold text-[#1C1C1C] font-mono">{stats?.totalVisitors ?? 0}</p>
+                </div>
+                <div className="bg-[#F8F7F3] p-3 rounded-lg border border-[#E5E5E0]">
+                  <p className="text-[10px] uppercase tracking-wider text-[#555555] mb-1">Visitors Today</p>
+                  <p className="font-serif text-2xl font-bold text-[#14532D] font-mono">{stats?.visitorsToday ?? 0}</p>
                 </div>
                 <div className="bg-[#F8F7F3] p-3 rounded-lg border border-[#E5E5E0]">
                   <p className="text-[10px] uppercase tracking-wider text-[#555555] mb-1">This Month</p>
-                  <p className="font-serif text-xl font-bold text-[#14532D]">{stats?.visitorsThisMonth ?? 0}</p>
+                  <p className="font-serif text-2xl font-bold text-[#14532D] font-mono">{stats?.visitorsThisMonth ?? 0}</p>
                 </div>
                 <div className="bg-[#F8F7F3] p-3 rounded-lg border border-[#E5E5E0]">
                   <p className="text-[10px] uppercase tracking-wider text-[#555555] mb-1">Returning</p>
-                  <p className="font-serif text-xl font-bold text-[#14532D]">{stats?.returningVisitors ?? 0}</p>
+                  <p className="font-serif text-2xl font-bold text-[#14532D] font-mono">{stats?.returningVisitors ?? 0}</p>
                 </div>
               </div>
               

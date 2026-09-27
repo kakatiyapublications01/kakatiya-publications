@@ -90,8 +90,27 @@ function AnalyticsContent() {
           total, today, thisWeek, thisMonth, returning, new: newVisit, locations
         });
       } catch (err) {
-        console.error("Error fetching visitor stats:", err);
-        setError("Failed to load visitor statistics.");
+        console.warn("Client-side visitor query warning, trying API fallback:", err);
+        try {
+          const res = await fetch("/api/visitors");
+          if (res.ok) {
+            const data = await res.json();
+            setStats({
+              total: data.total || 0,
+              today: data.today || 0,
+              thisWeek: data.thisWeek || 0,
+              thisMonth: data.thisMonth || 0,
+              returning: data.returning || 0,
+              new: Math.max(0, (data.total || 0) - (data.returning || 0)),
+              locations: [],
+            });
+            setError(null);
+          } else {
+            setError("Failed to load visitor statistics.");
+          }
+        } catch (apiErr) {
+          setError("Failed to load visitor statistics.");
+        }
       } finally {
         setLoading(false);
       }

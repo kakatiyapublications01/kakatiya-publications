@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
@@ -26,7 +25,8 @@ import {
   UserCheck,
 } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
   const [magazines, vvipMembers, stories, vipMembers] = await Promise.all([
@@ -36,7 +36,10 @@ export default async function HomePage() {
     getPublishedVipMembers().catch(() => []),
   ]);
 
-  const latestMagazine = magazines.length > 0 ? magazines[0] : null;
+  // Select the magazine marked as featured, fallback to latest published
+  const heroMagazine =
+    magazines.find((m) => Boolean(m.featured)) ||
+    (magazines.length > 0 ? magazines[0] : null);
   const leadStory = stories.length > 0 ? stories[0] : null;
   const secondaryStories = stories.slice(1, 4);
   const featuredVvip = vvipMembers.length > 0 ? vvipMembers[0] : null;
@@ -49,18 +52,20 @@ export default async function HomePage() {
     year: "numeric",
   }).format(new Date());
 
-  const plainMagazine = latestMagazine
+  const plainMagazine = heroMagazine
     ? {
-        id: latestMagazine.id,
-        title: latestMagazine.title || "",
-        year: latestMagazine.year || 2026,
-        pdfUrl: latestMagazine.pdfUrl || "",
-        coverImageUrl: latestMagazine.coverImageUrl || "",
-        description: latestMagazine.description || "",
-        pageCount: latestMagazine.pageCount || latestMagazine.pages || 64,
-        status: (latestMagazine.status || "published") as "published" | "draft" | "archived",
-        createdAt: typeof latestMagazine.createdAt === "string" ? latestMagazine.createdAt : "",
-        updatedAt: typeof latestMagazine.updatedAt === "string" ? latestMagazine.updatedAt : "",
+        id: heroMagazine.id,
+        title: heroMagazine.title || "",
+        year: heroMagazine.year || 2026,
+        month: heroMagazine.month || "",
+        pdfUrl: heroMagazine.pdfUrl || "",
+        coverImageUrl: heroMagazine.coverImageUrl || "",
+        description: heroMagazine.description || "",
+        pageCount: heroMagazine.pageCount || heroMagazine.pages || 64,
+        featured: Boolean(heroMagazine.featured),
+        status: (heroMagazine.status || "published") as "published" | "draft" | "archived",
+        createdAt: typeof heroMagazine.createdAt === "string" ? heroMagazine.createdAt : "",
+        updatedAt: typeof heroMagazine.updatedAt === "string" ? heroMagazine.updatedAt : "",
       }
     : null;
 

@@ -75,8 +75,9 @@ export function LiveVisitorCount() {
 
       if (res.ok) {
         const data = await res.json();
-        if (typeof data.activeCount === "number") {
-          setCount(data.activeCount);
+        const active = typeof data.count === "number" ? data.count : typeof data.activeCount === "number" ? data.activeCount : null;
+        if (typeof active === "number") {
+          setCount(active);
         }
       }
     } catch (err) {

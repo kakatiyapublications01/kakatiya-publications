@@ -38,6 +38,8 @@ export async function getPublishedMagazines(): Promise<Magazine[]> {
       };
     }) as Magazine[];
     return docs.sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
       if ((b.year || 0) !== (a.year || 0)) return (b.year || 0) - (a.year || 0);
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
@@ -93,6 +95,21 @@ export async function createMagazine(
   data: Omit<Magazine, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
   await ensureAdminAuth();
+
+  // If newly created magazine is featured, unset featured on all existing magazines
+  if (data.featured) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_NAME));
+      await Promise.all(
+        snap.docs
+          .filter((d) => d.data().featured)
+          .map((d) => updateDoc(doc(db, COLLECTION_NAME, d.id), { featured: false }))
+      );
+    } catch (e) {
+      console.warn("Failed to unset existing featured magazines:", e);
+    }
+  }
+
   const cleanData = sanitizeData(data as unknown as Record<string, unknown>);
   const docRef = await addDoc(collection(db, COLLECTION_NAME), {
     ...cleanData,
@@ -117,12 +134,48 @@ export async function updateMagazine(
   data: Partial<Omit<Magazine, "id" | "createdAt">>
 ): Promise<void> {
   await ensureAdminAuth();
+
+  // If this magazine is set to featured, unset featured on others
+  if (data.featured) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_NAME));
+      await Promise.all(
+        snap.docs
+          .filter((d) => d.id !== id && d.data().featured)
+          .map((d) => updateDoc(doc(db, COLLECTION_NAME, d.id), { featured: false }))
+      );
+    } catch (e) {
+      console.warn("Failed to unset existing featured magazines:", e);
+    }
+  }
+
   const cleanData = sanitizeData(data as unknown as Record<string, unknown>);
   const docRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(docRef, {
     ...cleanData,
     updatedAt: new Date().toISOString(),
   });
+}
+
+export async function toggleMagazineFeatured(id: string, featured: boolean): Promise<void> {
+  await ensureAdminAuth();
+  if (featured) {
+    const snap = await getDocs(collection(db, COLLECTION_NAME));
+    await Promise.all(
+      snap.docs.map((d) =>
+        updateDoc(doc(db, COLLECTION_NAME, d.id), {
+          featured: d.id === id,
+          updatedAt: new Date().toISOString(),
+        })
+      )
+    );
+  } else {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, {
+      featured: false,
+      updatedAt: new Date().toISOString(),
+    });
+  }
 }
 
 export async function deleteMagazine(id: string): Promise<void> {

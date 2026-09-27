@@ -26,11 +26,13 @@ export interface SerializableMagazine {
   id: string;
   title: string;
   year: number;
+  month?: string;
   pdfUrl: string;
   coverImageUrl: string;
   description: string;
   pageCount?: number;
   pages?: number;
+  featured?: boolean;
   status: "published" | "draft" | "archived";
   createdAt?: string;
   updatedAt?: string;
@@ -127,13 +129,13 @@ export function HeroScrollDemo({ magazine }: HeroScrollDemoProps) {
                 draggable={false}
               />
               <div className="absolute top-0 right-0 bg-[#14532D] text-white text-[9px] uppercase font-bold tracking-widest px-2.5 py-1 border-b border-l border-[#C9A227]">
-                Vol. VIII
+                {activeMagazine.month || "Special Edition"}
               </div>
             </div>
 
             {/* Subcaption */}
             <p className="mt-3 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-[#555555] text-center">
-              Vol. VIII No. 1 • 64 Pages
+              {activeMagazine.month ? `${activeMagazine.month} • ` : ""}Year {activeMagazine.year || 2026} • {activeMagazine.pageCount || 64} Pages
             </p>
           </div>
 
@@ -153,38 +155,49 @@ export function HeroScrollDemo({ magazine }: HeroScrollDemoProps) {
 
               {/* Title */}
               <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#14532D] leading-tight">
-                Legacy, Leadership &amp; Regional Development
+                {activeMagazine.title}
               </h2>
 
               <div className="h-[2px] w-14 bg-[#C9A227]" />
             </div>
 
-            {/* Key Highlights List */}
-            <div className="space-y-2 border-t border-[#E5E0D8] pt-3 sm:pt-4">
-              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#14532D] font-bold">
-                Editorial Highlights
-              </p>
-              <ul className="space-y-2.5 text-xs sm:text-[13px] text-[#1C1C1C]">
-                <li className="flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-[#C9A227] font-bold text-sm leading-none shrink-0 mt-0.5">•</span>
-                  <span className="font-medium hover:text-[#14532D] transition-colors">
-                    Leadership Insights: Special Feature on Regional Infrastructure
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-[#C9A227] font-bold text-sm leading-none shrink-0 mt-0.5">•</span>
-                  <span className="font-medium hover:text-[#14532D] transition-colors">
-                    Cultural Heritage: Preserving the Kakatiya Architectural Legacy
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-[#C9A227] font-bold text-sm leading-none shrink-0 mt-0.5">•</span>
-                  <span className="font-medium hover:text-[#14532D] transition-colors">
-                    Economic Growth: Development Framework for 2026
-                  </span>
-                </li>
-              </ul>
-            </div>
+            {/* Description or Highlights */}
+            {activeMagazine.description ? (
+              <div className="space-y-2 border-t border-[#E5E0D8] pt-3 sm:pt-4">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#14532D] font-bold">
+                  Editorial Summary
+                </p>
+                <p className="text-xs sm:text-[13px] text-[#1C1C1C] leading-relaxed whitespace-pre-line font-serif">
+                  {activeMagazine.description}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 border-t border-[#E5E0D8] pt-3 sm:pt-4">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#14532D] font-bold">
+                  Editorial Highlights
+                </p>
+                <ul className="space-y-2.5 text-xs sm:text-[13px] text-[#1C1C1C]">
+                  <li className="flex items-start gap-2.5 leading-relaxed">
+                    <span className="text-[#C9A227] font-bold text-sm leading-none shrink-0 mt-0.5">•</span>
+                    <span className="font-medium hover:text-[#14532D] transition-colors">
+                      Leadership Insights: Special Feature on Regional Infrastructure
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5 leading-relaxed">
+                    <span className="text-[#C9A227] font-bold text-sm leading-none shrink-0 mt-0.5">•</span>
+                    <span className="font-medium hover:text-[#14532D] transition-colors">
+                      Cultural Heritage: Preserving the Kakatiya Architectural Legacy
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5 leading-relaxed">
+                    <span className="text-[#C9A227] font-bold text-sm leading-none shrink-0 mt-0.5">•</span>
+                    <span className="font-medium hover:text-[#14532D] transition-colors">
+                      Economic Growth: Development Framework for {activeMagazine.year || 2026}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            )}
 
             {/* Action CTA */}
             <div className="pt-2 flex flex-wrap items-center gap-3">

@@ -45,10 +45,10 @@ async function cleanupStaleSessions() {
 export async function GET() {
   try {
     const count = await getActiveSessionCount();
-    return NextResponse.json({ success: true, count });
+    return NextResponse.json({ success: true, count, activeCount: count });
   } catch (error) {
     console.error("GET live-sessions error:", error);
-    return NextResponse.json({ success: false, count: 0 }, { status: 500 });
+    return NextResponse.json({ success: false, count: 0, activeCount: 0 }, { status: 500 });
   }
 }
 
@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       count: activeCount,
+      activeCount,
     });
   } catch (error) {
     console.error("POST live-sessions heartbeat error:", error);

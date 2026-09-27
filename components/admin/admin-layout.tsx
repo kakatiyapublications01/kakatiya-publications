@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Activity,
   Globe,
+  Users,
 } from "lucide-react";
 
 interface NavSection {
@@ -91,6 +92,39 @@ export function AdminLayout({ children, pageTitle }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [liveCount, setLiveCount] = useState<number | null>(null);
+  const [totalVisitors, setTotalVisitors] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchCounts() {
+      try {
+        const [liveRes, visitorsRes] = await Promise.all([
+          fetch("/api/live-sessions"),
+          fetch("/api/visitors"),
+        ]);
+        if (liveRes.ok && isMounted) {
+          const liveData = await liveRes.json();
+          const active = typeof liveData.count === "number" ? liveData.count : typeof liveData.activeCount === "number" ? liveData.activeCount : 0;
+          setLiveCount(active);
+        }
+        if (visitorsRes.ok && isMounted) {
+          const visData = await visitorsRes.json();
+          setTotalVisitors(typeof visData.total === "number" ? visData.total : 0);
+        }
+      } catch (err) {
+        // Non-critical background fetch
+      }
+    }
+
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const isActive = (href: string) => {
     if (href.includes("#")) return pathname === href.split("#")[0];
@@ -144,7 +178,19 @@ export function AdminLayout({ children, pageTitle }: AdminLayoutProps) {
                         {item.icon}
                       </span>
                       <span>{item.title}</span>
-                      {active && <ChevronRight className="w-3 h-3 ml-auto text-[#E8D48A]" />}
+                      {item.href === "/admin/analytics/live" && liveCount !== null && (
+                        <span className="ml-auto bg-emerald-500/30 text-emerald-200 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border border-emerald-400/30">
+                          {liveCount}
+                        </span>
+                      )}
+                      {item.href === "/admin/analytics" && totalVisitors !== null && (
+                        <span className="ml-auto bg-amber-500/30 text-amber-200 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border border-amber-400/30">
+                          {totalVisitors}
+                        </span>
+                      )}
+                      {active && item.href !== "/admin/analytics/live" && item.href !== "/admin/analytics" && (
+                        <ChevronRight className="w-3 h-3 ml-auto text-[#E8D48A]" />
+                      )}
                     </Link>
                   </li>
                 );
@@ -221,14 +267,41 @@ export function AdminLayout({ children, pageTitle }: AdminLayoutProps) {
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
+            {/* Real-time Live Visitors Pill */}
+            <Link
+              href="/admin/analytics/live"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition-all cursor-pointer shadow-xs"
+              title="Click to view Live Analytics"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+              </span>
+              <span className="font-bold font-mono">{liveCount !== null ? liveCount : "…"}</span>
+              <span className="hidden sm:inline">Live Now</span>
+            </Link>
+
+            {/* Total Visitors Pill */}
+            <Link
+              href="/admin/analytics"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-all cursor-pointer shadow-xs"
+              title="Click to view Visitor Analytics"
+            >
+              <Users className="w-3.5 h-3.5 text-amber-700" />
+              <span className="font-bold font-mono">{totalVisitors !== null ? totalVisitors : "…"}</span>
+              <span className="hidden sm:inline">Visitors</span>
+            </Link>
+
+            <div className="h-4 w-[1px] bg-[#E5E5E0] mx-0.5 hidden sm:block" />
+
             <Link
               href="/"
               target="_blank"
               className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#14532D] hover:text-[#C9A227] transition-colors"
             >
               <Globe className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">View Public Site</span>
+              <span className="hidden md:inline">View Public Site</span>
             </Link>
           </div>
         </header>

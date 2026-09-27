@@ -13,13 +13,14 @@ import {
   updateMagazineStatus,
   updateMagazine,
   deleteMagazine,
+  toggleMagazineFeatured,
 } from "@/lib/firebase/magazines";
 import { uploadMagazinePdf, uploadMagazineCoverImage } from "@/lib/firebase/storage";
 import { ensureAdminAuth } from "@/lib/firebase/auth";
 import dynamic from "next/dynamic";
 import {
   Plus, X, Eye, Edit, Trash2, BookOpen, Upload, ImageIcon,
-  CheckCircle, AlertCircle, Loader2, FileText, Download,
+  CheckCircle, AlertCircle, Loader2, FileText, Download, Star,
 } from "lucide-react";
 
 const FlipbookReaderModal = dynamic(
@@ -238,6 +239,27 @@ function AdminMagazinesContent() {
     }
   };
 
+  const handleToggleFeatured = async (mag: Magazine) => {
+    try {
+      const willFeature = !mag.featured;
+      await toggleMagazineFeatured(mag.id, willFeature);
+      setMagazines((prev) =>
+        prev.map((m) => ({
+          ...m,
+          featured: willFeature ? m.id === mag.id : false,
+        }))
+      );
+      showSuccess(
+        willFeature
+          ? `"${mag.title}" is now set as the Homepage Cover Edition.`
+          : `Removed "${mag.title}" from Homepage Cover.`
+      );
+    } catch (err) {
+      console.error("Toggle featured error:", err);
+      setError("Failed to update homepage cover status.");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       setDeletingId(id);
@@ -333,11 +355,21 @@ function AdminMagazinesContent() {
                     <td className="py-3 px-5">
                       <p className="font-semibold text-[#1C1C1C] text-sm">{mag.title}</p>
                       {mag.month && <p className="text-xs text-[#C9A227] mt-0.5">{mag.month}</p>}
-                      {mag.featured && (
-                        <span className="inline-block text-[10px] text-[#14532D] bg-[#14532D]/10 border border-[#14532D]/20 px-1.5 py-0.5 rounded mt-1 font-semibold">
-                          Featured
-                        </span>
-                      )}
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(mag)}
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-xs ${
+                            mag.featured
+                              ? "bg-amber-100 text-amber-900 border border-amber-300 font-bold"
+                              : "bg-gray-100 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 border border-gray-200"
+                          }`}
+                          title="Click to select this edition as the Main Cover on the Home Page"
+                        >
+                          <Star className={`w-3.5 h-3.5 ${mag.featured ? "fill-amber-500 text-amber-600" : "text-gray-400"}`} />
+                          <span>{mag.featured ? "★ Active on Home Page" : "Show on Home Page"}</span>
+                        </button>
+                      </div>
                     </td>
                     <td className="py-3 px-5 text-[#555555] font-mono text-xs font-semibold">{mag.year}</td>
                     <td className="py-3 px-5 text-[#555555] font-mono text-xs">{mag.pageCount || mag.pages || "—"}</td>
