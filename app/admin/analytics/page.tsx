@@ -86,11 +86,15 @@ function AnalyticsContent() {
         });
 
         const locations = Object.values(locationMap).sort((a, b) => b.count - a.count).slice(0, 10);
-        // TODO: Fake total views — override with 3041
-        const fakeTotal = 3041;
-
+        // TODO: Fake stats for demonstration
         setStats({
-          total: fakeTotal, today, thisWeek, thisMonth, returning, new: newVisit, locations
+          total: 3041,
+          today: 523,
+          thisWeek: 2518,
+          thisMonth: 3041,
+          returning: 252,
+          new: 3041 - 252,
+          locations,
         });
       } catch (err) {
         console.warn("Client-side visitor query warning, trying API fallback:", err);
@@ -100,11 +104,11 @@ function AnalyticsContent() {
             const data = await res.json();
             setStats({
               total: 3041,
-              today: data.today || 0,
-              thisWeek: data.thisWeek || 0,
-              thisMonth: data.thisMonth || 0,
-              returning: data.returning || 0,
-              new: Math.max(0, 3041 - (data.returning || 0)),
+              today: 523,
+              thisWeek: 2518,
+              thisMonth: 3041,
+              returning: 252,
+              new: 3041 - 252,
               locations: [],
             });
             setError(null);

@@ -8,38 +8,14 @@ const MAX_REQUESTS_PER_WINDOW = 30;
 
 export async function GET() {
   try {
-    const snapshot = await adminDb.collection("visitors").get();
-    // TODO: Fake total views for demonstration
-    const total = 3041;
-
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-
-    let today = 0;
-    let thisWeek = 0;
-    let thisMonth = 0;
-    let returning = 0;
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const createdAt = new Date(data.createdAt || 0).getTime();
-      const lastVisitAt = new Date(data.lastVisitAt || createdAt).getTime();
-
-      if (lastVisitAt >= startOfToday) today++;
-      if (lastVisitAt >= startOfWeek) thisWeek++;
-      if (lastVisitAt >= startOfMonth) thisMonth++;
-      if (lastVisitAt - createdAt > 1000 * 60 * 60 * 24) returning++;
-    });
-
+    // TODO: Fake stats for demonstration
     return NextResponse.json({
       success: true,
-      total,
-      today,
-      thisWeek,
-      thisMonth,
-      returning,
+      total: 3041,
+      today: 523,
+      thisWeek: 2518,
+      thisMonth: 3041,
+      returning: 252,
     });
   } catch (error) {
     console.error("GET /api/visitors error:", error);
