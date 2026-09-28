@@ -116,10 +116,10 @@ export default async function HomePage() {
               {/* SIDE A: Large Magazine Cover (5 cols) */}
               <div className="lg:col-span-5 flex flex-col items-center">
                 <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[3/4] bg-[#F8F7F3] border border-[#E5E5E0] magazine-shadow magazine-shadow-hover overflow-hidden">
-                  {latestMagazine?.coverImageUrl ? (
+                  {heroMagazine?.coverImageUrl ? (
                     <img
-                      src={latestMagazine.coverImageUrl}
-                      alt={latestMagazine.title}
+                      src={heroMagazine.coverImageUrl}
+                      alt={heroMagazine.title}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -129,7 +129,7 @@ export default async function HomePage() {
                           KakatiyaPulse Official
                         </p>
                         <h3 className="font-serif text-3xl font-black text-[#14532D] mt-2 uppercase">
-                          {latestMagazine?.year || "2026"}
+                          {heroMagazine?.year || "2026"}
                         </h3>
                         <p className="text-xs uppercase tracking-widest text-[#555555] mt-1">
                           Special Edition
@@ -149,14 +149,14 @@ export default async function HomePage() {
 
                   {/* Corner Edition Tag */}
                   <div className="absolute top-0 right-0 bg-[#14532D] text-[#F8F7F3] text-[10px] uppercase font-bold tracking-widest px-3 py-1 border-b border-l border-[#C9A227]">
-                    {latestMagazine?.year ? `${latestMagazine.year} Edition` : "Special Edition"}
+                    {heroMagazine?.year ? `${heroMagazine.year} Edition` : "Special Edition"}
                   </div>
                 </div>
 
                 {/* Cover Footnote Metadata */}
                 <div className="mt-4 text-center">
                   <p className="text-xs text-[#555555] font-mono">
-                    {latestMagazine?.pageCount ? `${latestMagazine.pageCount} Pages • ` : ""}
+                    {heroMagazine?.pageCount ? `${heroMagazine.pageCount} Pages • ` : ""}
                     High-Definition Interactive Flipbook
                   </p>
                 </div>
@@ -171,12 +171,12 @@ export default async function HomePage() {
                     </span>
                     <span className="text-[#E5E5E0]">•</span>
                     <span className="text-[11px] font-mono text-[#555555] uppercase">
-                      {latestMagazine?.year ? `Year ${latestMagazine.year}` : "Current Issue"}
+                      {heroMagazine?.year ? `Year ${heroMagazine.year}` : "Current Issue"}
                     </span>
                   </div>
 
                   <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#14532D] tracking-tight leading-[1.15]">
-                    {latestMagazine?.title || "Celebrating Excellence, Preserving Legacy, and Documenting History"}
+                    {heroMagazine?.title || "Celebrating Excellence, Preserving Legacy, and Documenting History"}
                   </h2>
                 </div>
 
@@ -187,7 +187,7 @@ export default async function HomePage() {
                 </blockquote>
 
                 <p className="text-[#555555] text-sm sm:text-base leading-relaxed">
-                  {latestMagazine?.description ||
+                  {heroMagazine?.description ||
                     "Explore our official digital edition, formatted as a double-page physical flipbook. Featuring comprehensive cover stories, in-depth photo galleries, VVIP spotlights, and exclusive community perspectives."}
                 </p>
 
