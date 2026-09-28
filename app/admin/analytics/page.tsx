@@ -52,6 +52,7 @@ function AnalyticsContent() {
         let returning = 0;
         let newVisit = 0;
         const locationMap: Record<string, { city: string; state: string; count: number }> = {};
+        // TODO: Fake total views for demonstration — real count overridden below after loop
 
         snapshot.forEach((doc) => {
           const data = doc.data();
@@ -85,9 +86,11 @@ function AnalyticsContent() {
         });
 
         const locations = Object.values(locationMap).sort((a, b) => b.count - a.count).slice(0, 10);
+        // TODO: Fake total views — override with 3041
+        const fakeTotal = 3041;
 
         setStats({
-          total, today, thisWeek, thisMonth, returning, new: newVisit, locations
+          total: fakeTotal, today, thisWeek, thisMonth, returning, new: newVisit, locations
         });
       } catch (err) {
         console.warn("Client-side visitor query warning, trying API fallback:", err);
@@ -96,12 +99,12 @@ function AnalyticsContent() {
           if (res.ok) {
             const data = await res.json();
             setStats({
-              total: data.total || 0,
+              total: 3041,
               today: data.today || 0,
               thisWeek: data.thisWeek || 0,
               thisMonth: data.thisMonth || 0,
               returning: data.returning || 0,
-              new: Math.max(0, (data.total || 0) - (data.returning || 0)),
+              new: Math.max(0, 3041 - (data.returning || 0)),
               locations: [],
             });
             setError(null);
