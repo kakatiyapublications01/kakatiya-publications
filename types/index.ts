@@ -32,6 +32,18 @@ export interface Story {
   updatedAt: string;
 }
 
+export interface Announcement {
+  id: string;
+  title: string; // Telugu headline / title
+  content: string; // Telugu text content
+  imageUrl?: string;
+  isActive: boolean; // Published / active flag
+  authorId?: string;
+  authorName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface VipMember {
   id: string;
   name: string;

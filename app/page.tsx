@@ -12,6 +12,8 @@ import { getPublishedMagazines } from "@/lib/firebase/magazines";
 import { getPublishedVvipMembers } from "@/lib/firebase/vvip";
 import { getPublishedStories } from "@/lib/firebase/stories";
 import { getPublishedVipMembers } from "@/lib/firebase/vip";
+import { getPublishedAnnouncements } from "@/lib/firebase/announcements";
+import { TeluguAnnouncements } from "@/components/ui/telugu-announcements";
 
 import { HeroScrollDemo } from "@/components/container-scroll-animation-demo";
 import KakatiyaPulseSplash from "@/components/ui/sparkles-fullpage-demo";
@@ -29,11 +31,12 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const [magazines, vvipMembers, stories, vipMembers] = await Promise.all([
+  const [magazines, vvipMembers, stories, vipMembers, announcements] = await Promise.all([
     getPublishedMagazines().catch(() => []),
     getPublishedVvipMembers().catch(() => []),
     getPublishedStories().catch(() => []),
     getPublishedVipMembers().catch(() => []),
+    getPublishedAnnouncements().catch(() => []),
   ]);
 
   // Select the magazine marked as featured, fallback to latest published
@@ -232,6 +235,9 @@ export default async function HomePage() {
             </div>
           </Container>
         </section>
+
+        {/* TELUGU ANNOUNCEMENTS & OFFICIAL UPDATES */}
+        <TeluguAnnouncements announcements={announcements} />
 
         {/* 3. LATEST STORIES & COLUMNS (Newspaper Broadsheet Grid) */}
         <section className="py-14 sm:py-16 border-b border-[#E5E5E0] bg-white">

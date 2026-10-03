@@ -19,6 +19,7 @@ import {
   Activity,
   Globe,
   Users,
+  Megaphone,
 } from "lucide-react";
 
 interface NavSection {
@@ -63,6 +64,11 @@ const navSections: NavSection[] = [
         title: "VVIP Spotlight",
         href: "/admin/vvip",
         icon: <Crown className="w-4 h-4" />,
+      },
+      {
+        title: "Announcements",
+        href: "/admin/announcements",
+        icon: <Megaphone className="w-4 h-4" />,
       },
     ],
   },
