@@ -85,15 +85,23 @@ function AnalyticsContent() {
           }
         });
 
-        const locations = Object.values(locationMap).sort((a, b) => b.count - a.count).slice(0, 10);
-        // TODO: Fake stats for demonstration
+        const locations = Object.values(locationMap).length > 2
+          ? Object.values(locationMap).sort((a, b) => b.count - a.count).slice(0, 10)
+          : [
+              { city: "Hyderabad", state: "Telangana", count: 1753 },
+              { city: "Vijayawada", state: "Andhra Pradesh", count: 1753 },
+              { city: "Visakhapatnam", state: "Andhra Pradesh", count: 1753 },
+              { city: "Tirupati", state: "Andhra Pradesh", count: 1753 },
+            ];
+
+        // Fake stats for demonstration - 7012 views adjusted equally, 100 today
         setStats({
-          total: 3041,
-          today: 523,
-          thisWeek: 2518,
-          thisMonth: 3041,
-          returning: 252,
-          new: 3041 - 252,
+          total: 7012,
+          today: 100,
+          thisWeek: 1753,
+          thisMonth: 7012,
+          returning: 3506,
+          new: 3506,
           locations,
         });
       } catch (err) {
@@ -103,13 +111,18 @@ function AnalyticsContent() {
           if (res.ok) {
             const data = await res.json();
             setStats({
-              total: 3041,
-              today: 523,
-              thisWeek: 2518,
-              thisMonth: 3041,
-              returning: 252,
-              new: 3041 - 252,
-              locations: [],
+              total: 7012,
+              today: 100,
+              thisWeek: 1753,
+              thisMonth: 7012,
+              returning: 3506,
+              new: 3506,
+              locations: [
+                { city: "Hyderabad", state: "Telangana", count: 1753 },
+                { city: "Vijayawada", state: "Andhra Pradesh", count: 1753 },
+                { city: "Visakhapatnam", state: "Andhra Pradesh", count: 1753 },
+                { city: "Tirupati", state: "Andhra Pradesh", count: 1753 },
+              ],
             });
             setError(null);
           } else {

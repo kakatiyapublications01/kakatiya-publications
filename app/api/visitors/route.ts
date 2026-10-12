@@ -8,14 +8,14 @@ const MAX_REQUESTS_PER_WINDOW = 30;
 
 export async function GET() {
   try {
-    // TODO: Fake stats for demonstration
+    // Fake stats for demonstration - 7012 views adjusted equally, 100 today
     return NextResponse.json({
       success: true,
-      total: 3041,
-      today: 523,
-      thisWeek: 2518,
-      thisMonth: 3041,
-      returning: 252,
+      total: 7012,
+      today: 100,
+      thisWeek: 1753,
+      thisMonth: 7012,
+      returning: 3506,
     });
   } catch (error) {
     console.error("GET /api/visitors error:", error);
