@@ -3,7 +3,7 @@ import React from "react";
 import { Phone, Eye } from "lucide-react";
 
 // TODO: Replace with real analytics API call when live data is ready
-const FAKE_TOTAL_VIEWS = 7012;
+const FAKE_TOTAL_VIEWS = 8121;
 
 export function KakatiyaFooter() {
   return (
