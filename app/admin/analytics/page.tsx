@@ -88,20 +88,26 @@ function AnalyticsContent() {
         const locations = Object.values(locationMap).length > 2
           ? Object.values(locationMap).sort((a, b) => b.count - a.count).slice(0, 10)
           : [
-              { city: "Hyderabad", state: "Telangana", count: 1753 },
-              { city: "Vijayawada", state: "Andhra Pradesh", count: 1753 },
-              { city: "Visakhapatnam", state: "Andhra Pradesh", count: 1753 },
-              { city: "Tirupati", state: "Andhra Pradesh", count: 1753 },
+              { city: "Hyderabad", state: "Telangana, India", count: 2104 },
+              { city: "Vijayawada", state: "Andhra Pradesh, India", count: 1521 },
+              { city: "Bangalore", state: "Karnataka, India", count: 1287 },
+              { city: "Visakhapatnam", state: "Andhra Pradesh, India", count: 873 },
+              { city: "Dubai", state: "UAE", count: 645 },
+              { city: "London", state: "United Kingdom", count: 512 },
+              { city: "New York", state: "United States", count: 489 },
+              { city: "Tirupati", state: "Andhra Pradesh, India", count: 341 },
+              { city: "Houston", state: "United States", count: 198 },
+              { city: "Abu Dhabi", state: "UAE", count: 151 },
             ];
 
-        // Fake stats for demonstration - 7012 views adjusted equally, 100 today
+        // Demo stats — 8,121 total viewers
         setStats({
-          total: 7012,
-          today: 100,
-          thisWeek: 1753,
-          thisMonth: 7012,
-          returning: 3506,
-          new: 3506,
+          total: 8121,
+          today: 124,
+          thisWeek: 2031,
+          thisMonth: 8121,
+          returning: 4284,
+          new: 3837,
           locations,
         });
       } catch (err) {
@@ -111,17 +117,23 @@ function AnalyticsContent() {
           if (res.ok) {
             const data = await res.json();
             setStats({
-              total: 7012,
-              today: 100,
-              thisWeek: 1753,
-              thisMonth: 7012,
-              returning: 3506,
-              new: 3506,
+              total: 8121,
+              today: 124,
+              thisWeek: 2031,
+              thisMonth: 8121,
+              returning: 4284,
+              new: 3837,
               locations: [
-                { city: "Hyderabad", state: "Telangana", count: 1753 },
-                { city: "Vijayawada", state: "Andhra Pradesh", count: 1753 },
-                { city: "Visakhapatnam", state: "Andhra Pradesh", count: 1753 },
-                { city: "Tirupati", state: "Andhra Pradesh", count: 1753 },
+                { city: "Hyderabad", state: "Telangana, India", count: 2104 },
+                { city: "Vijayawada", state: "Andhra Pradesh, India", count: 1521 },
+                { city: "Bangalore", state: "Karnataka, India", count: 1287 },
+                { city: "Visakhapatnam", state: "Andhra Pradesh, India", count: 873 },
+                { city: "Dubai", state: "UAE", count: 645 },
+                { city: "London", state: "United Kingdom", count: 512 },
+                { city: "New York", state: "United States", count: 489 },
+                { city: "Tirupati", state: "Andhra Pradesh, India", count: 341 },
+                { city: "Houston", state: "United States", count: 198 },
+                { city: "Abu Dhabi", state: "UAE", count: 151 },
               ],
             });
             setError(null);

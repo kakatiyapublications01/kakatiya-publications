@@ -20,12 +20,22 @@ Command output is condensed to save 60-90% LLM context window tokens while prese
 - `rtk proxy <cmd>` - Run a command unfiltered if raw output is strictly needed.
 - `RTK_DISABLED=1 <cmd>` - Skip RTK for one command.
 
+## Mandatory Semantic Knowledge Graph First Policy (Token Saver Enforcement)
+Autonomous AI agents in ANY IDE MUST ALWAYS query the pre-indexed semantic knowledge graphs to provide answers BEFORE falling back to raw file reads that waste prompt tokens:
+
+### 1. Code-Based Files -> CodeGraphContext (Upstream: CodeGraphContext/CodeGraphContext)
+- **Code Query Engine:** For all code architecture, symbol definitions, function signatures, call hierarchies (callers/callees), class inheritance, and module dependencies, AI agents MUST query the CodeGraphContext index (/codegraph-query, `cgc query`, `cgc find`, or CodeGraphContext MCP tools) FIRST.
+- **Zero-Waste Fallback:** NEVER dump or read entire source code files or directory trees into LLM prompt context when answering code questions. Only fall back to localized file reads (and then only targeted slices) if the knowledge graph query does not provide sufficient detail.
+- **Live Synchronization:** The project code graph is continuously kept updated via background incremental sync / `cgc watch` / on-save triggers.
+
+### 2. Non-Code Files -> JevGraph (Upstream: chenmingtang830/jevgraph)
+- **Document Query Engine ONLY:** JevGraph is strictly designated for non-code files (documentation, Markdown specs, PRDs, PDFs, Word docs `.docx`, slides `.pptx`, text `.txt`).
+- **Bounded Evidence:** When ingesting large specs, PRDs, PDFs, or architectural documentation, build or query bounded evidence-backed knowledge graphs (/jevgraph-build, /jevgraph-query) with character-level page maps instead of loading raw long documents into prompt context.
+- **Strict Separation:** NEVER use JevGraph for source code AST indexing; code files are strictly handled by CodeGraphContext.
+
+
 ## Headroom Context Compression (Upstream: headroomlabs-ai/headroom)
 - Utilize Headroom context compression and Compress-Cache-Retrieve (CCR) for heavy JSON structures, file reads, and tool payloads to minimize prompt tokens.
-
-
-## JevGraph Knowledge Graph Context Optimization (Upstream: chenmingtang830/jevgraph)
-- When ingesting large specs, PRDs, PDFs, or architectural documentation, build or query bounded evidence-backed knowledge graphs (/jevgraph-build, /jevgraph-query) with character-level page maps instead of loading raw long documents into prompt context.
 
 
 ## Anti-Slop Filter & Quality Rules (Upstream: miqdadbadjuber/anti-slop)
