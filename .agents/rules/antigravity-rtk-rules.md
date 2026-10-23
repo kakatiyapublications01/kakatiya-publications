@@ -17,6 +17,19 @@ Command output is condensed to save 60-90% LLM context window tokens while prese
 - `rtk proxy <cmd>` - Run a command unfiltered if raw output is strictly needed.
 - `RTK_DISABLED=1 <cmd>` - Skip RTK for one command.
 
+## 3-Tier Hybrid Web Research & Scraping Policy (Upstream: fastcrw/crw & lightpanda-io/browser)
+When your IDE agent receives a task requiring web research or extraction, it follows this strict 3-tier routing logic:
+
+1. **Discovery (Tier 1 - Default Search)**:
+   - The agent uses its built-in search tool (`search_web` / native search) to find target URLs or documentation links.
+2. **Fast Extraction (Tier 2 - fastCRW)**:
+   - The agent attempts to fetch the URL using fastCRW (`crw scrape <url>`, `crw_scrape`, or `http://127.0.0.1:3000`).
+   - If the page is server-rendered (like a blog, GitHub README, or docs site), fastCRW instantly grabs clean Markdown/text, saving 70-90% context tokens without JS engine overhead.
+3. **Deep Dynamic Rendering (Tier 3 - Lightpanda Local via MCP)**:
+   - If fastCRW returns empty content, a rendering error, or hits a client-side JavaScript wall (e.g., a React/Vue SPA app or login-gated dashboard), the agent automatically falls back to Lightpanda Local via MCP (`lightpanda mcp`).
+   - Lightpanda executes the JS via V8 and feeds a clean Accessibility Tree or Markdown back into the IDE context window using ~10x less memory than headless Chrome.
+
+
 ## Mandatory Semantic Knowledge Graph First Policy (Token Saver Enforcement)
 Autonomous AI agents in ANY IDE MUST ALWAYS query the pre-indexed semantic knowledge graphs to provide answers BEFORE falling back to raw file reads that waste prompt tokens:
 
@@ -53,4 +66,24 @@ Follow Anti-Slop rules to prevent generic AI slop in generated UI, copy, and cod
 ## Context Optimization (Compact Diffs & Outlines)
 - Inspect git changes using compact single-line diffs: `rtk git diff -U1` instead of wide multi-line context.
 - When exploring codebases, inspect function signatures / AST outlines (/rtk-outline) before reading entire files into context.
+
+## ECC Context Management & Compaction Protocol (Upstream: affaan-m/ECC)
+Autonomous AI agents MUST actively manage conversation context window load to prevent token bloat and degraded reasoning:
+1. **Strategic Compaction at Milestones:** At major phase completions or after 50+ tool calls, invoke strategic compaction (/strategic-compact) to summarize completed steps, pruned raw outputs, and focus active memory strictly on pending requirements.
+2. **Context Keeper (`ck`) Snapshots:** Before major context purges, architectural refactors, or switching tasks, persist durable checkpoint files (`.agents/ck/context.json` and `.agents/ck/CONTEXT.md` or invoke /ck:save) so state is never lost across conversation boundaries.
+3. **Anti-Loop Council & Agent Evaluation:** If stuck in repeated failed edits, build verification errors, or circular debug loops (>3 failed attempts), invoke /council or /agent-evaluator to obtain root-cause guidance and stop wasting tokens on trial-and-error repetition.
+
+## Upstream Engine Integration & Latency Guardrails Standards
+Whenever a new upstream engine or external tool (e.g. `fastcrw/crw`, `CodeGraphContext`, `JevGraph`) is introduced or updated:
+1. **Holistic Dashboard Integration (8 Surfaces Required)**:
+   - Header action toggle button (`Turn <Tool> ON / OFF`)
+   - Setup alert banner (missing chips + AI install prompt generator)
+   - Dedicated dashboard section & Quick Action triggers
+   - Multi-channel savings breakdown navigation tabs & distribution weights
+   - System Health diagnostics row with status, AI install prompt, sync, and uninstall actions
+   - Upstream versions dropdown listing
+   - Upstream Sync Picker (`showSyncPicker`) and Uninstall Picker (`showUninstallPicker`)
+   - Footer upstream reference links
+2. **Zero-Noise Latency Benchmarks**: "Test Upstream Latencies" must selectively ping and display only **installed** upstream components, silently omitting/ignoring uninstalled tools so users never see failed pings or clutter for optional tools.
+3. **Footer Version Number Invariant**: The current plugin release version must always be presented beside "Token Saver" in front of "• GitHub".
 

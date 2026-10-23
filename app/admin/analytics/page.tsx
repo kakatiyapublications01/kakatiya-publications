@@ -88,25 +88,25 @@ function AnalyticsContent() {
         const locations = Object.values(locationMap).length > 2
           ? Object.values(locationMap).sort((a, b) => b.count - a.count).slice(0, 10)
           : [
-              { city: "Hyderabad", state: "Telangana, India", count: 2104 },
-              { city: "Vijayawada", state: "Andhra Pradesh, India", count: 1521 },
-              { city: "Bangalore", state: "Karnataka, India", count: 1287 },
-              { city: "Visakhapatnam", state: "Andhra Pradesh, India", count: 873 },
-              { city: "Dubai", state: "UAE", count: 645 },
-              { city: "London", state: "United Kingdom", count: 512 },
-              { city: "New York", state: "United States", count: 489 },
-              { city: "Tirupati", state: "Andhra Pradesh, India", count: 341 },
-              { city: "Houston", state: "United States", count: 198 },
-              { city: "Abu Dhabi", state: "UAE", count: 151 },
+              { city: "Hyderabad", state: "Telangana, India", count: 2149 },
+              { city: "Vijayawada", state: "Andhra Pradesh, India", count: 1556 },
+              { city: "Bangalore", state: "Karnataka, India", count: 1312 },
+              { city: "Visakhapatnam", state: "Andhra Pradesh, India", count: 893 },
+              { city: "Dubai", state: "UAE", count: 660 },
+              { city: "London", state: "United Kingdom", count: 524 },
+              { city: "New York", state: "United States", count: 500 },
+              { city: "Tirupati", state: "Andhra Pradesh, India", count: 349 },
+              { city: "Houston", state: "United States", count: 203 },
+              { city: "Abu Dhabi", state: "UAE", count: 155 },
             ];
 
-        // Demo stats — 8,121 total viewers
+        // Demo stats — 8,301 total viewers
         setStats({
-          total: 8121,
-          today: 124,
-          thisWeek: 2031,
-          thisMonth: 8121,
-          returning: 4284,
+          total: 8301,
+          today: 304,
+          thisWeek: 2211,
+          thisMonth: 8301,
+          returning: 4464,
           new: 3837,
           locations,
         });
@@ -117,23 +117,23 @@ function AnalyticsContent() {
           if (res.ok) {
             const data = await res.json();
             setStats({
-              total: 8121,
-              today: 124,
-              thisWeek: 2031,
-              thisMonth: 8121,
-              returning: 4284,
+              total: 8301,
+              today: 304,
+              thisWeek: 2211,
+              thisMonth: 8301,
+              returning: 4464,
               new: 3837,
               locations: [
-                { city: "Hyderabad", state: "Telangana, India", count: 2104 },
-                { city: "Vijayawada", state: "Andhra Pradesh, India", count: 1521 },
-                { city: "Bangalore", state: "Karnataka, India", count: 1287 },
-                { city: "Visakhapatnam", state: "Andhra Pradesh, India", count: 873 },
-                { city: "Dubai", state: "UAE", count: 645 },
-                { city: "London", state: "United Kingdom", count: 512 },
-                { city: "New York", state: "United States", count: 489 },
-                { city: "Tirupati", state: "Andhra Pradesh, India", count: 341 },
-                { city: "Houston", state: "United States", count: 198 },
-                { city: "Abu Dhabi", state: "UAE", count: 151 },
+                { city: "Hyderabad", state: "Telangana, India", count: 2149 },
+                { city: "Vijayawada", state: "Andhra Pradesh, India", count: 1556 },
+                { city: "Bangalore", state: "Karnataka, India", count: 1312 },
+                { city: "Visakhapatnam", state: "Andhra Pradesh, India", count: 893 },
+                { city: "Dubai", state: "UAE", count: 660 },
+                { city: "London", state: "United Kingdom", count: 524 },
+                { city: "New York", state: "United States", count: 500 },
+                { city: "Tirupati", state: "Andhra Pradesh, India", count: 349 },
+                { city: "Houston", state: "United States", count: 203 },
+                { city: "Abu Dhabi", state: "UAE", count: 155 },
               ],
             });
             setError(null);
