@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Inter, Noto_Sans_Telugu } from "next/font/google";
 import { AuthProvider } from "@/context/auth-context";
 import "./globals.css";
 
@@ -13,6 +13,14 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+});
+
+const telugu = Noto_Sans_Telugu({
+  variable: "--font-telugu-sans",
+  subsets: ["telugu"],
+  display: "swap",
+  // Only download the Telugu face on routes that actually render Telugu copy.
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -55,7 +63,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${playfair.variable} ${inter.variable} h-full antialiased`}
+      className={`${playfair.variable} ${inter.variable} ${telugu.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-[#1C1C1C] selection:bg-[#14532D]/20 selection:text-[#14532D]">
         <AuthProvider>{children}</AuthProvider>

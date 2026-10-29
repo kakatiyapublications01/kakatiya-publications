@@ -50,9 +50,11 @@ export interface SerializableStory {
 interface HeroScrollDemoProps {
   magazine?: SerializableMagazine | Magazine | null;
   stories?: SerializableStory[] | Story[];
+  /** Opening typewriter block, rendered directly above the loader action. */
+  heroIntro?: React.ReactNode;
 }
 
-export function HeroScrollDemo({ magazine }: HeroScrollDemoProps) {
+export function HeroScrollDemo({ magazine, heroIntro }: HeroScrollDemoProps) {
   const [isReaderOpen, setIsReaderOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -115,7 +117,7 @@ export function HeroScrollDemo({ magazine }: HeroScrollDemoProps) {
         }
       >
         {/* Editorial Broadsheet Layout Spread */}
-        <div className="h-full w-full bg-[#FDFBF7] p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row items-center gap-6 lg:gap-10 overflow-y-auto md:overflow-hidden select-none">
+        <div className="h-full w-full bg-[#FDFBF7] p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row items-center gap-6 lg:gap-10 overflow-y-auto select-none">
           {/* LEFT COLUMN: 40% Width on Desktop */}
           <div className="w-full md:w-[40%] flex flex-col items-center justify-center shrink-0">
             <div className="relative w-full max-w-[210px] sm:max-w-[240px] md:max-w-[260px] lg:max-w-[280px] aspect-[3/4] bg-white border border-[#E5E0D8] shadow-lg rounded-sm overflow-hidden group">
@@ -196,6 +198,12 @@ export function HeroScrollDemo({ magazine }: HeroScrollDemoProps) {
                     </span>
                   </li>
                 </ul>
+              </div>
+            )}
+
+            {heroIntro && (
+              <div className="border-t border-[#E5E0D8] pt-3">
+                {heroIntro}
               </div>
             )}
 

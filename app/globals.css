@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* The publication ships a single warm-paper theme. Scope `dark:` utilities to
+   an explicit .dark container so an OS-level dark preference never washes out
+   text on the light editorial canvas. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --background: #ffffff;
@@ -36,6 +41,7 @@
 
   --font-serif: var(--font-playfair), Georgia, Cambria, serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-telugu: var(--font-telugu-sans), "Noto Sans Telugu", "Telugu Sangam MN", "Gautami", sans-serif;
 }
 
 /* Custom scrollbar & editorial base styling */

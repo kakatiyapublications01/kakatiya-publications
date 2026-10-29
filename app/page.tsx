@@ -14,9 +14,10 @@ import { getPublishedStories } from "@/lib/firebase/stories";
 import { getPublishedVipMembers } from "@/lib/firebase/vip";
 import { getPublishedAnnouncements } from "@/lib/firebase/announcements";
 import { TeluguAnnouncements } from "@/components/ui/telugu-announcements";
+import { TypingHero } from "@/components/ui/typing-hero";
 
 import { HeroScrollDemo } from "@/components/container-scroll-animation-demo";
-import KakatiyaPulseSplash from "@/components/ui/sparkles-fullpage-demo";
+import { IntroPreloader } from "@/components/ui/intro-preloader";
 import {
   BookOpen,
   ArrowRight,
@@ -83,8 +84,8 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Editorial Particle Intro Splash Overlay */}
-      <KakatiyaPulseSplash />
+      {/* Cinematic Typewriter Intro Preloader — plays once per session */}
+      <IntroPreloader />
 
       <Header />
 
@@ -110,7 +111,19 @@ export default async function HomePage() {
         </section>
 
         {/* HERO SCROLL ANIMATION */}
-        <HeroScrollDemo magazine={plainMagazine} stories={plainStories} />
+        <HeroScrollDemo
+          magazine={plainMagazine}
+          stories={plainStories}
+          heroIntro={
+            <TypingHero
+              size="sm"
+              align="left"
+              subtitle="ఆంధ్రప్రదేశ్ అభివృద్ధి, నాయకత్వం మరియు ప్రగతి ప్రస్థానాన్ని ఆవిష్కరించే ప్రత్యేక డిజిటల్ సంచిక."
+              subtitleClassName="max-w-none text-[10px] leading-[1.7] sm:text-[10.5px] lg:text-[11px]"
+              className="bg-transparent"
+            />
+          }
+        />
 
         {/* 2. MAIN FEATURE: SPECIAL EDITION SPREAD */}
         <section className="py-12 sm:py-16 border-b border-[#E5E5E0] bg-white">
