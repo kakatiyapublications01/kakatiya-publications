@@ -5,12 +5,14 @@ import { Container } from "@/components/ui/container";
 import { EditorialHeader } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
+import { pageMetadata } from "@/lib/seo";
 import { Mail, Phone, MapPin } from "lucide-react";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "Contact Desk",
   description: "Get in touch with KakatiyaPulse editorial board and press desk.",
-};
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (

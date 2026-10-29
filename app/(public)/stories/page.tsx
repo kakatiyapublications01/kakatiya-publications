@@ -5,12 +5,14 @@ import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { EditorialHeader } from "@/components/ui/typography";
 import { getPublishedStories } from "@/lib/firebase/stories";
+import { pageMetadata } from "@/lib/seo";
 import { FileText, Calendar, ArrowRight } from "lucide-react";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "Stories & Articles",
   description: "Read inspiring editorial columns, leadership messages, and cultural chronicles from KakatiyaPulse.",
-};
+  path: "/stories",
+});
 
 export const revalidate = 60;
 

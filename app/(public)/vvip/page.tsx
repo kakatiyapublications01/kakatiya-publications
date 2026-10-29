@@ -4,12 +4,14 @@ import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { EditorialHeader } from "@/components/ui/typography";
 import { getPublishedVvipMembers } from "@/lib/firebase/vvip";
+import { pageMetadata } from "@/lib/seo";
 import { Crown } from "lucide-react";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "VVIP Spotlight",
   description: "Prestigious VVIP profile features and leader spotlights from KakatiyaPulse.",
-};
+  path: "/vvip",
+});
 
 export const revalidate = 60;
 

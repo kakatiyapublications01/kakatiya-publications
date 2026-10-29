@@ -9,7 +9,7 @@ export const siteConfig = {
   shortName: "KakatiyaPulse",
   description:
     "A premier editorial and community publication dedicated to high-impact magazines, prestigious VVIP & VIP profiles, and influential stories.",
-  url: "https://kakatiyapulse.com",
+  url: "https://www.kakatiyapulse.com",
   contact: {
     email: "contact@kakatiyapulse.com",
     phone: "+91 98765 43210",

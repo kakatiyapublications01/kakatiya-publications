@@ -4,12 +4,14 @@ import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { EditorialHeader } from "@/components/ui/typography";
 import { getPublishedVipMembers } from "@/lib/firebase/vip";
+import { pageMetadata } from "@/lib/seo";
 import { MapPin, UserCheck } from "lucide-react";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "VIP Directory",
   description: "Distinguished VIP member publication directory from KakatiyaPulse.",
-};
+  path: "/vip",
+});
 
 export const revalidate = 60;
 

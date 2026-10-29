@@ -3,11 +3,13 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { EditorialHeader } from "@/components/ui/typography";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "About Us",
   description: "Learn about KakatiyaPulse editorial mission, publishing heritage, and values.",
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

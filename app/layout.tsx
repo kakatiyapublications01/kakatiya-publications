@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter, Noto_Sans_Telugu } from "next/font/google";
 import { AuthProvider } from "@/context/auth-context";
+import { siteConfig } from "@/config/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -24,6 +25,7 @@ const telugu = Noto_Sans_Telugu({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: "KakatiyaPulse | Premium Editorial & Digital Magazine",
     template: "%s | KakatiyaPulse",
@@ -47,10 +49,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: "KakatiyaPulse | Premium Editorial Publishing",
     description: "Discover luxury digital magazines, VVIP features, and editorial stories.",
-    url: "https://kakatiyapulse.com",
+    url: siteConfig.url,
     siteName: "KakatiyaPulse",
     locale: "en_US",
     type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "KakatiyaPulse | Premium Editorial Publishing",
+    description: "Discover luxury digital magazines, VVIP features, and editorial stories.",
   },
 };
 
